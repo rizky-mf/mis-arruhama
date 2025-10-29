@@ -1,0 +1,4 @@
+- formatDate(date)
+- showAlert(message, type)
+- showLoading()
+- hideLoading()
