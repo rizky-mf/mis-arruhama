@@ -54,6 +54,7 @@ app.use('/api/admin/kelas', require('./routes/admin/kelas.routes'));
 app.use('/api/admin/mata-pelajaran', require('./routes/admin/mataPelajaran.routes'));
 app.use('/api/admin/jadwal-pelajaran', require('./routes/admin/jadwalPelajaran.routes'));
 app.use('/api/admin/presensi', require('./routes/admin/presensi.routes'));
+app.use('/api/admin/rapor', require('./routes/admin/rapor.routes')); 
 // app.use('/api/guru', require('./routes/guru.routes'));
 // app.use('/api/siswa', require('./routes/siswa.routes'));
 // app.use('/api/chatbot', require('./routes/chatbot.routes'));
