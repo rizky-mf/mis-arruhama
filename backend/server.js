@@ -47,6 +47,8 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', require('./routes/auth.routes'));
+
+// Admin Routes
 app.use('/api/admin/dashboard', require('./routes/admin/dashboard.routes'));
 app.use('/api/admin/siswa', require('./routes/admin/siswa.routes'));
 app.use('/api/admin/guru', require('./routes/admin/guru.routes'));
@@ -56,10 +58,13 @@ app.use('/api/admin/jadwal-pelajaran', require('./routes/admin/jadwalPelajaran.r
 app.use('/api/admin/presensi', require('./routes/admin/presensi.routes'));
 app.use('/api/admin/rapor', require('./routes/admin/rapor.routes'));
 app.use('/api/admin/list-pembayaran', require('./routes/admin/listPembayaran.routes'));
-app.use('/api/admin/pembayaran', require('./routes/admin/pembayaran.routes'));
-// app.use('/api/guru', require('./routes/guru.routes'));
-// app.use('/api/siswa', require('./routes/siswa.routes'));
-// app.use('/api/chatbot', require('./routes/chatbot.routes'));
+app.use('/api/admin/pembayaran', require('./routes/admin/pembayaran.routes')); 
+app.use('/api/admin/informasi-umum', require('./routes/admin/informasiUmum.routes'));
+
+// Chatbot Route
+app.use('/api/chatbot', require('./routes/chatbot.routes')); // ✅ Uncomment ini
+
+
 
 // 404 Handler
 app.use((req, res) => {
