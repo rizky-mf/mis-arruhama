@@ -78,6 +78,11 @@ const login = async (req, res) => {
       userData.profile = siswa;
     }
 
+    // Clear chat history saat login (fresh start)
+    await db.ChatbotLog.destroy({
+      where: { user_id: user.id }
+    });
+
     // Generate JWT token
     const token = jwt.sign(
       {

@@ -3,19 +3,66 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const { testConnection } = require('./config/database');
+const nlpManager = require('./services/nlpManager');
 
 // Initialize Express App
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors()); // Enable CORS
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
-app.use(morgan('dev')); // HTTP request logger
+// ============================================
+// SECURITY MIDDLEWARE
+// ============================================
+
+// Helmet - Secure HTTP headers
+app.use(helmet());
+
+// CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://127.0.0.1:5500'];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+// Rate Limiting - Global
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  message: {
+    success: false,
+    message: 'Terlalu banyak request, silakan coba lagi nanti'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+
+// ============================================
+// BASIC MIDDLEWARE
+// ============================================
+
+// Body Parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// HTTP request logger
+app.use(morgan('dev'));
 
 // Static files (untuk upload)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -47,22 +94,15 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', require('./routes/auth.routes'));
-
-// Admin Routes
-app.use('/api/admin/dashboard', require('./routes/admin/dashboard.routes'));
-app.use('/api/admin/siswa', require('./routes/admin/siswa.routes'));
-app.use('/api/admin/guru', require('./routes/admin/guru.routes'));
-app.use('/api/admin/kelas', require('./routes/admin/kelas.routes'));
-app.use('/api/admin/mata-pelajaran', require('./routes/admin/mataPelajaran.routes'));
-app.use('/api/admin/jadwal-pelajaran', require('./routes/admin/jadwalPelajaran.routes'));
-app.use('/api/admin/presensi', require('./routes/admin/presensi.routes'));
-app.use('/api/admin/rapor', require('./routes/admin/rapor.routes'));
-app.use('/api/admin/list-pembayaran', require('./routes/admin/listPembayaran.routes'));
-app.use('/api/admin/pembayaran', require('./routes/admin/pembayaran.routes')); 
-app.use('/api/admin/informasi-umum', require('./routes/admin/informasiUmum.routes'));
-
-// Chatbot Route
-app.use('/api/chatbot', require('./routes/chatbot.routes')); // ✅ Uncomment ini
+app.use('/api/admin', require('./routes/admin.routes'));
+app.use('/api/guru', require('./routes/guru.routes'));
+app.use('/api/siswa', require('./routes/siswa.routes'));
+app.use('/api/keuangan', require('./routes/keuangan.routes'));
+app.use('/api/informasi', require('./routes/informasi.routes'));
+app.use('/api/presensi', require('./routes/presensi.routes'));
+app.use('/api/rapor', require('./routes/rapor.routes'));
+app.use('/api/settings', require('./routes/settings.routes'));
+app.use('/api/chatbot', require('./routes/chatbot.routes'));
 
 
 
@@ -89,11 +129,17 @@ const startServer = async () => {
   try {
     // Test database connection
     const isConnected = await testConnection();
-    
+
     if (!isConnected) {
       console.error('❌ Failed to connect to database. Server not started.');
       process.exit(1);
     }
+
+    // Initialize NLP Manager
+    console.log('🤖 Initializing NLP Manager...');
+    await nlpManager.loadModel();
+    const modelInfo = nlpManager.getModelInfo();
+    console.log(`✅ NLP Ready - Intents: ${modelInfo.intents.length}`);
 
     // Start listening
     app.listen(PORT, () => {
@@ -102,6 +148,7 @@ const startServer = async () => {
       console.log(`📍 Environment: ${process.env.NODE_ENV}`);
       console.log(`🌐 API URL: http://localhost:${PORT}`);
       console.log(`🗄️  Database: ${process.env.DB_NAME}`);
+      console.log(`🤖 NLP: Ready with ${modelInfo.intents.length} intents`);
       console.log('='.repeat(50));
     });
   } catch (error) {

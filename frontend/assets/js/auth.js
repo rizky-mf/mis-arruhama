@@ -1,5 +1,0 @@
-- login(username, password)
-- logout()
-- getUser()
-- getToken()
-- isAuthenticated()

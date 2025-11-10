@@ -1,4 +1,0 @@
-- get(endpoint)
-- post(endpoint, data)
-- put(endpoint, data)
-- delete(endpoint)

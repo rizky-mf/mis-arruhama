@@ -1,0 +1,23 @@
+const express = require('express');
+const router = express.Router();
+const guruDashboardController = require('../controllers/guruDashboardController');
+const { verifyToken, guruOnly } = require('../middlewares/auth');
+
+// All routes require authentication and guru role
+router.use(verifyToken);
+router.use(guruOnly);
+
+// Dashboard
+router.get('/dashboard', guruDashboardController.getDashboard);
+
+// Jadwal
+router.get('/jadwal', guruDashboardController.getJadwal);
+
+// Kelas
+router.get('/kelas', guruDashboardController.getKelasDiampu);
+router.get('/kelas/:kelas_id/siswa', guruDashboardController.getSiswaByKelas);
+
+// Mata Pelajaran
+router.get('/mata-pelajaran', guruDashboardController.getMataPelajaranDiampu);
+
+module.exports = router;

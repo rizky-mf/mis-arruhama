@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: true
       }
     },
+    plain_password: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: 'Plain text password for admin reference (siswa only)'
+    },
     role: {
       type: DataTypes.ENUM('admin', 'guru', 'siswa'),
       allowNull: false,

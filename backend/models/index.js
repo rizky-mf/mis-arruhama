@@ -5,6 +5,8 @@ const { DataTypes } = require('sequelize');
 // Import semua models
 const User = require('./User')(sequelize, DataTypes);
 const ProfilMadrasah = require('./ProfilMadrasah')(sequelize, DataTypes);
+const Settings = require('./Settings')(sequelize, DataTypes);
+const ActivityLog = require('./ActivityLog')(sequelize, DataTypes);
 const Guru = require('./Guru')(sequelize, DataTypes);
 const Kelas = require('./Kelas')(sequelize, DataTypes);
 const Siswa = require('./Siswa')(sequelize, DataTypes);
@@ -28,6 +30,10 @@ const ChatbotLog = require('./ChatbotLog')(sequelize, DataTypes);
 User.hasOne(Guru, { foreignKey: 'user_id', as: 'guru' });
 User.hasOne(Siswa, { foreignKey: 'user_id', as: 'siswa' });
 User.hasMany(ChatbotLog, { foreignKey: 'user_id', as: 'chatbot_logs' });
+User.hasMany(ActivityLog, { foreignKey: 'user_id', as: 'activity_logs' });
+
+// ActivityLog Relations
+ActivityLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 // Guru Relations
 Guru.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -102,6 +108,8 @@ const db = {
   sequelize,
   User,
   ProfilMadrasah,
+  Settings,
+  ActivityLog,
   Guru,
   Kelas,
   Siswa,

@@ -19,12 +19,12 @@ const {
  */
 const getAllSiswa = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', kelas_id = '', status = 'aktif' } = req.query;
+    const { page = 1, limit = 10, search = '', kelas_id = '', status = '' } = req.query;
     const { offset, limit: pageLimit } = getPagination(page, limit);
 
     // Build where clause
     const where = {};
-    
+
     if (search) {
       where[Op.or] = [
         { nisn: { [Op.like]: `%${search}%` } },
@@ -36,7 +36,8 @@ const getAllSiswa = async (req, res) => {
       where.kelas_id = kelas_id;
     }
 
-    if (status) {
+    // Only apply status filter if explicitly provided
+    if (status && status !== '') {
       where.status = status;
     }
 
@@ -59,7 +60,7 @@ const getAllSiswa = async (req, res) => {
         {
           model: db.User,
           as: 'user',
-          attributes: ['id', 'username', 'is_active']
+          attributes: ['id', 'username', 'plain_password', 'is_active']
         }
       ],
       offset,
@@ -98,7 +99,7 @@ const getSiswaById = async (req, res) => {
         {
           model: db.User,
           as: 'user',
-          attributes: ['id', 'username', 'is_active']
+          attributes: ['id', 'username', 'plain_password', 'is_active']
         }
       ]
     });
@@ -121,7 +122,7 @@ const getSiswaById = async (req, res) => {
  */
 const createSiswa = async (req, res) => {
   const transaction = await db.sequelize.transaction();
-  
+
   try {
     const {
       nisn,
@@ -131,12 +132,23 @@ const createSiswa = async (req, res) => {
       alamat,
       nama_orang_tua,
       telepon_orang_tua,
-      kelas_id
+      kelas_id,
+      status,
+      username,
+      password
     } = req.body;
 
     // Validasi input
     if (!nisn || !nama_lengkap || !jenis_kelamin) {
       return errorResponse(res, 'NISN, nama lengkap, dan jenis kelamin wajib diisi', 400);
+    }
+
+    if (!username || !password) {
+      return errorResponse(res, 'Username dan password wajib diisi', 400);
+    }
+
+    if (password.length < 6) {
+      return errorResponse(res, 'Password minimal 6 karakter', 400);
     }
 
     if (!validateNISN(nisn)) {
@@ -149,23 +161,22 @@ const createSiswa = async (req, res) => {
       return errorResponse(res, 'NISN sudah terdaftar', 400);
     }
 
-    // Generate username dan password
-    const username = generateUsernameFromNISN(nisn);
-    const plainPassword = generatePassword(8);
-    const hashedPassword = await hashPassword(plainPassword);
-
     // Cek duplikat username
     const existingUser = await db.User.findOne({ where: { username } });
     if (existingUser) {
-      return errorResponse(res, 'Username sudah ada', 400);
+      return errorResponse(res, 'Username sudah terdaftar', 400);
     }
+
+    // Hash password
+    const hashedPassword = await hashPassword(password);
 
     // Create user
     const user = await db.User.create({
-      username,
+      username: cleanString(username),
       password: hashedPassword,
+      plain_password: password, // Save plain password untuk admin
       role: 'siswa',
-      is_active: true
+      is_active: status === 1 || status === '1' || status === 'aktif' ? true : false
     }, { transaction });
 
     // Create siswa
@@ -179,17 +190,30 @@ const createSiswa = async (req, res) => {
       nama_orang_tua: nama_orang_tua || null,
       telepon_orang_tua: telepon_orang_tua || null,
       kelas_id: kelas_id || null,
-      status: 'aktif'
+      status: status === 1 || status === '1' ? 'aktif' : 'tidak_aktif'
     }, { transaction });
 
     await transaction.commit();
 
+    // Fetch siswa dengan relasi
+    const siswaWithRelations = await db.Siswa.findByPk(siswa.id, {
+      include: [
+        {
+          model: db.Kelas,
+          as: 'kelas',
+          attributes: ['id', 'nama_kelas', 'tingkat']
+        },
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['id', 'username', 'plain_password', 'is_active']
+        }
+      ]
+    });
+
     successResponse(res, {
-      siswa,
-      credentials: {
-        username,
-        password: plainPassword // Return plain password untuk diberitahu ke siswa
-      }
+      siswa: siswaWithRelations,
+      plainPassword: password // Return plain password untuk informasi admin
     }, 'Siswa berhasil ditambahkan', 201);
 
   } catch (error) {
@@ -204,6 +228,8 @@ const createSiswa = async (req, res) => {
  * PUT /api/admin/siswa/:id
  */
 const updateSiswa = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+
   try {
     const { id } = req.params;
     const {
@@ -214,7 +240,9 @@ const updateSiswa = async (req, res) => {
       nama_orang_tua,
       telepon_orang_tua,
       kelas_id,
-      status
+      status,
+      username,
+      password
     } = req.body;
 
     const siswa = await db.Siswa.findByPk(id);
@@ -222,7 +250,7 @@ const updateSiswa = async (req, res) => {
       return errorResponse(res, 'Siswa tidak ditemukan', 404);
     }
 
-    // Update data
+    // Update data siswa
     await siswa.update({
       nama_lengkap: nama_lengkap || siswa.nama_lengkap,
       jenis_kelamin: jenis_kelamin || siswa.jenis_kelamin,
@@ -231,49 +259,125 @@ const updateSiswa = async (req, res) => {
       nama_orang_tua: nama_orang_tua || siswa.nama_orang_tua,
       telepon_orang_tua: telepon_orang_tua || siswa.telepon_orang_tua,
       kelas_id: kelas_id !== undefined ? kelas_id : siswa.kelas_id,
-      status: status || siswa.status
+      status: status === 1 || status === '1' ? 'aktif' : status === 0 || status === '0' ? 'tidak_aktif' : siswa.status
+    }, { transaction });
+
+    // Update user credentials if provided
+    if (username || password) {
+      const user = await db.User.findByPk(siswa.user_id);
+      if (user) {
+        const updateData = {};
+
+        // Check jika username berubah
+        if (username && username !== user.username) {
+          // Cek duplikat username
+          const existingUser = await db.User.findOne({ where: { username } });
+          if (existingUser && existingUser.id !== user.id) {
+            await transaction.rollback();
+            return errorResponse(res, 'Username sudah digunakan oleh user lain', 400);
+          }
+          updateData.username = cleanString(username);
+        }
+
+        // Update password jika diisi
+        if (password && password.length >= 6) {
+          updateData.password = await hashPassword(password);
+          updateData.plain_password = password; // Save plain password untuk admin
+        }
+
+        // Update is_active based on status
+        updateData.is_active = status === 1 || status === '1' || status === 'aktif' ? true : false;
+
+        await user.update(updateData, { transaction });
+      }
+    }
+
+    await transaction.commit();
+
+    // Fetch updated siswa dengan relasi
+    const updatedSiswa = await db.Siswa.findByPk(id, {
+      include: [
+        {
+          model: db.Kelas,
+          as: 'kelas',
+          attributes: ['id', 'nama_kelas', 'tingkat']
+        },
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['id', 'username', 'plain_password', 'is_active']
+        }
+      ]
     });
 
-    successResponse(res, siswa, 'Data siswa berhasil diupdate');
+    successResponse(res, updatedSiswa, 'Data siswa berhasil diupdate');
 
   } catch (error) {
+    await transaction.rollback();
     console.error('Update siswa error:', error);
     errorResponse(res, 'Gagal mengupdate siswa', 500);
   }
 };
 
 /**
- * Delete siswa (soft delete via status)
+ * Delete siswa (hard delete - permanently remove from database)
  * DELETE /api/admin/siswa/:id
  */
 const deleteSiswa = async (req, res) => {
   const transaction = await db.sequelize.transaction();
-  
+
   try {
     const { id } = req.params;
 
     const siswa = await db.Siswa.findByPk(id);
     if (!siswa) {
+      await transaction.rollback();
       return errorResponse(res, 'Siswa tidak ditemukan', 404);
     }
 
-    // Soft delete: ubah status jadi "pindah"
-    await siswa.update({ status: 'pindah' }, { transaction });
+    const userId = siswa.user_id;
 
-    // Non-aktifkan user
-    await db.User.update(
-      { is_active: false },
-      { where: { id: siswa.user_id }, transaction }
-    );
+    console.log(`Deleting siswa ID: ${id}, User ID: ${userId}`);
+
+    // Step 1: Delete related records first (to avoid foreign key constraints)
+    // Delete from pembayaran
+    await db.Pembayaran.destroy({
+      where: { siswa_id: id },
+      transaction
+    });
+
+    // Delete from presensi
+    await db.Presensi.destroy({
+      where: { siswa_id: id },
+      transaction
+    });
+
+    // Delete from rapor
+    await db.Rapor.destroy({
+      where: { siswa_id: id },
+      transaction
+    });
+
+    // Step 2: Delete siswa record
+    await siswa.destroy({ transaction });
+
+    // Step 3: Delete user account
+    if (userId) {
+      await db.User.destroy({
+        where: { id: userId },
+        transaction
+      });
+    }
 
     await transaction.commit();
 
-    successResponse(res, null, 'Siswa berhasil dihapus');
+    console.log(`Successfully deleted siswa ID: ${id} and user ID: ${userId}`);
+    successResponse(res, null, 'Siswa berhasil dihapus secara permanen dari database');
 
   } catch (error) {
     await transaction.rollback();
     console.error('Delete siswa error:', error);
-    errorResponse(res, 'Gagal menghapus siswa', 500);
+    errorResponse(res, 'Gagal menghapus siswa: ' + error.message, 500);
   }
 };
 

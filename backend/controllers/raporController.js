@@ -214,9 +214,41 @@ const getRaporByKelas = async (req, res) => {
       ]
     });
 
-    // Group by siswa jika tidak ada filter mata pelajaran
+    // Jika ada filter mata_pelajaran_id, kembalikan semua siswa di kelas
     let dataRapor;
-    if (!mata_pelajaran_id) {
+    if (mata_pelajaran_id) {
+      // Get all siswa in this kelas
+      const allSiswa = await db.Siswa.findAll({
+        where: { kelas_id, status: 'aktif' },
+        attributes: ['id', 'nisn', 'nama_lengkap'],
+        order: [['nama_lengkap', 'ASC']]
+      });
+
+      // Map rapor data
+      const raporMap = {};
+      rapor.forEach(r => {
+        raporMap[r.siswa_id] = r;
+      });
+
+      // Combine all siswa with their rapor (if exists)
+      dataRapor = allSiswa.map(siswa => {
+        const raporData = raporMap[siswa.id];
+        return {
+          siswa: {
+            id: siswa.id,
+            nisn: siswa.nisn,
+            nama_lengkap: siswa.nama_lengkap
+          },
+          nilai_harian: raporData?.nilai_harian || null,
+          nilai_uts: raporData?.nilai_uts || null,
+          nilai_uas: raporData?.nilai_uas || null,
+          nilai_akhir: raporData?.nilai_akhir || null,
+          predikat: raporData?.predikat || null,
+          catatan: raporData?.catatan || null
+        };
+      });
+    } else {
+      // Group by siswa jika tidak ada filter mata pelajaran
       const siswaMap = {};
       rapor.forEach(r => {
         const siswaId = r.siswa_id;
@@ -239,17 +271,15 @@ const getRaporByKelas = async (req, res) => {
         const nilaiList = siswaMap[siswaId].nilai
           .map(n => n.nilai_akhir)
           .filter(n => n !== null);
-        
+
         const rataRata = nilaiList.length > 0
           ? (nilaiList.reduce((sum, val) => sum + parseFloat(val), 0) / nilaiList.length).toFixed(2)
           : 0;
-        
+
         siswaMap[siswaId].rata_rata = parseFloat(rataRata);
       });
 
       dataRapor = Object.values(siswaMap);
-    } else {
-      dataRapor = rapor;
     }
 
     successResponse(res, {
@@ -345,9 +375,10 @@ const createRapor = async (req, res) => {
       return errorResponse(res, 'siswa_id, mata_pelajaran_id, kelas_id, semester, dan tahun_ajaran wajib diisi', 400);
     }
 
-    // Validasi semester
-    if (!['1', '2'].includes(semester)) {
-      return errorResponse(res, 'Semester harus 1 atau 2', 400);
+    // Validasi semester (support both old format 1/2 and new format Ganjil/Genap)
+    const validSemesters = ['1', '2', 'Ganjil', 'Genap'];
+    if (!validSemesters.includes(semester)) {
+      return errorResponse(res, 'Semester harus Ganjil atau Genap', 400);
     }
 
     // Cek siswa exists
@@ -568,9 +599,10 @@ const bulkCreateRapor = async (req, res) => {
       return errorResponse(res, 'kelas_id, mata_pelajaran_id, semester, tahun_ajaran, dan rapor_list wajib diisi', 400);
     }
 
-    // Validasi semester
-    if (!['1', '2'].includes(semester)) {
-      return errorResponse(res, 'Semester harus 1 atau 2', 400);
+    // Validasi semester (support both old format 1/2 and new format Ganjil/Genap)
+    const validSemesters = ['1', '2', 'Ganjil', 'Genap'];
+    if (!validSemesters.includes(semester)) {
+      return errorResponse(res, 'Semester harus Ganjil atau Genap', 400);
     }
 
     // Cek kelas dan mata pelajaran exists
@@ -627,14 +659,14 @@ const bulkCreateRapor = async (req, res) => {
         });
 
         if (existing) {
-          // Update
+          // Update - use !== undefined to allow null and 0 values
           await existing.update({
-            nilai_harian: item.nilai_harian || existing.nilai_harian,
-            nilai_uts: item.nilai_uts || existing.nilai_uts,
-            nilai_uas: item.nilai_uas || existing.nilai_uas,
+            nilai_harian: item.nilai_harian !== undefined ? item.nilai_harian : existing.nilai_harian,
+            nilai_uts: item.nilai_uts !== undefined ? item.nilai_uts : existing.nilai_uts,
+            nilai_uas: item.nilai_uas !== undefined ? item.nilai_uas : existing.nilai_uas,
             nilai_akhir: nilaiAkhir,
             predikat,
-            catatan: item.catatan || existing.catatan
+            catatan: item.catatan !== undefined ? item.catatan : existing.catatan
           }, { transaction });
           results.updated++;
         } else {
@@ -645,12 +677,12 @@ const bulkCreateRapor = async (req, res) => {
             kelas_id,
             semester,
             tahun_ajaran,
-            nilai_harian: item.nilai_harian || null,
-            nilai_uts: item.nilai_uts || null,
-            nilai_uas: item.nilai_uas || null,
+            nilai_harian: item.nilai_harian,
+            nilai_uts: item.nilai_uts,
+            nilai_uas: item.nilai_uas,
             nilai_akhir: nilaiAkhir,
             predikat,
-            catatan: item.catatan || null,
+            catatan: item.catatan,
             created_by
           }, { transaction });
           results.created++;

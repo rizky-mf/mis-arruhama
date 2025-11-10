@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     siswa_id: { type: DataTypes.INTEGER, allowNull: false, references: { model: 'siswa', key: 'id' } },
     mata_pelajaran_id: { type: DataTypes.INTEGER, allowNull: false, references: { model: 'mata_pelajaran', key: 'id' } },
     kelas_id: { type: DataTypes.INTEGER, allowNull: false, references: { model: 'kelas', key: 'id' } },
-    semester: { type: DataTypes.ENUM('1', '2'), allowNull: false },
+    semester: { type: DataTypes.ENUM('1', '2', 'Ganjil', 'Genap'), allowNull: false },
     tahun_ajaran: { type: DataTypes.STRING(20), allowNull: false },
     nilai_harian: { type: DataTypes.DECIMAL(5, 2) },
     nilai_uts: { type: DataTypes.DECIMAL(5, 2) },

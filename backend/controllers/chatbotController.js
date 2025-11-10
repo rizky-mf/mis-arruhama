@@ -1,17 +1,14 @@
 // controllers/chatbotController.js
 const db = require('../models');
 const { Op } = require('sequelize');
-const axios = require('axios');
+const nlpManager = require('../services/nlpManager');
 const {
   successResponse,
   errorResponse
 } = require('../utils/helper');
 
-// URL Python NLP Service
-const PYTHON_NLP_URL = process.env.PYTHON_NLP_URL || 'http://localhost:5001';
-
 /**
- * Get chatbot response (dengan Python NLP)
+ * Get chatbot response (dengan node-nlp)
  * POST /api/chatbot/ask
  */
 const getChatbotResponse = async (req, res) => {
@@ -24,83 +21,118 @@ const getChatbotResponse = async (req, res) => {
       return errorResponse(res, 'Message tidak boleh kosong', 400);
     }
 
-    // STEP 1: Kirim message ke Python NLP service untuk intent & entity extraction
-    let nlpResult;
-    try {
-      const nlpResponse = await axios.post(`${PYTHON_NLP_URL}/api/nlp/analyze`, {
-        message: message.trim(),
-        user_id: userId,
-        user_role: req.user.role,
-        context: context
-      }, {
-        timeout: 10000,
-        headers: { 'Content-Type': 'application/json' }
-      });
+    // STEP 1: Process message dengan NLP Manager
+    const nlpResult = await nlpManager.process(message.trim(), context || {});
 
-      nlpResult = nlpResponse.data;
-    } catch (nlpError) {
-      console.error('Python NLP Service error:', nlpError.message);
-      
-      // Fallback ke rule-based jika Python service down
-      nlpResult = {
-        intent_name: analyzeIntentFallback(message),
-        entities: {},
-        confidence_score: 0.5
-      };
-    }
+    // Extract intent dan confidence
+    const intentName = nlpResult.intent_name || 'unknown';
+    const confidenceScore = nlpResult.confidence_score || 0;
 
     // STEP 2: Cari atau buat intent di database
-    let [intent, created] = await db.ChatbotIntent.findOrCreate({
-      where: { intent_name: nlpResult.intent_name },
+    let [intent] = await db.ChatbotIntent.findOrCreate({
+      where: { intent_name: intentName },
       defaults: {
-        intent_name: nlpResult.intent_name,
+        intent_name: intentName,
         description: `Auto-created from user query`
       }
     });
 
-    // STEP 3: Handle intent berdasarkan hasil NLP
+    // STEP 3: Check recent low confidence count (untuk fallback offer)
+    const recentLogs = await db.ChatbotLog.findAll({
+      where: { user_id: userId },
+      order: [['created_at', 'DESC']],
+      limit: 4
+    });
+
+    const lowConfidenceCount = recentLogs.filter(log => log.confidence_score < 0.6).length;
+
+    // STEP 4: Handle intent berdasarkan hasil NLP
     let response = {};
 
     // Cek confidence score
-    if (nlpResult.confidence_score < 0.6) {
-      response = getLowConfidenceResponse(nlpResult);
+    if (confidenceScore < 0.6) {
+      // Jika sudah 4 kali low confidence, tawarkan kontak langsung
+      if (lowConfidenceCount >= 3) {
+        response = await getContactOfferResponse(req.user);
+      } else {
+        response = getLowConfidenceResponse(nlpResult);
+      }
     } else {
-      switch (nlpResult.intent_name) {
+      switch (intentName) {
         case 'jadwal':
         case 'schedule':
           response = await getJadwalResponse(nlpResult, req.user);
           break;
-        
+
         case 'nilai':
         case 'grades':
           response = await getNilaiResponse(nlpResult, req.user);
           break;
-        
+
         case 'presensi':
         case 'attendance':
           response = await getPresensiResponse(nlpResult, req.user);
           break;
-        
+
         case 'pembayaran':
         case 'payment':
           response = await getPembayaranResponse(nlpResult, req.user);
           break;
-        
+
         case 'informasi':
         case 'information':
           response = await getInformasiResponse(nlpResult);
           break;
-        
+
         case 'greeting':
         case 'salam':
-          response = getGreetingResponse(req.user);
+          response = await getGreetingResponse(req.user);
           break;
-        
+
+        case 'profil':
+        case 'profile':
+          response = await getProfilResponse(req.user);
+          break;
+
+        case 'kelas_guru':
+        case 'class_teacher':
+          response = await getKelasGuruResponse(req.user);
+          break;
+
+        case 'data_guru':
+          response = await getDataGuruResponse(req.user);
+          break;
+
+        case 'data_siswa':
+          response = await getDataSiswaResponse(req.user);
+          break;
+
+        case 'data_kelas':
+          response = await getDataKelasResponse(req.user);
+          break;
+
+        case 'mata_pelajaran':
+        case 'mapel':
+          response = await getMataPelajaranResponse(req.user);
+          break;
+
+        case 'konfirmasi_ya':
+          response = await getKonfirmasiYaResponse(req.user);
+          break;
+
+        case 'konfirmasi_tidak':
+          response = await getKonfirmasiTidakResponse(req.user);
+          break;
+
+        case 'datetime':
+          response = getDateTimeResponse();
+          break;
+
         case 'help':
         case 'bantuan':
           response = getHelpResponse();
           break;
-        
+
         default:
           response = await getDefaultOrCustomResponse(intent.id);
       }
@@ -112,13 +144,13 @@ const getChatbotResponse = async (req, res) => {
       user_message: message.trim(),
       bot_response: response.message || 'No response',
       intent_id: intent.id,
-      confidence_score: nlpResult.confidence_score
+      confidence_score: confidenceScore
     });
 
     successResponse(res, {
       ...response,
-      intent: nlpResult.intent_name,
-      confidence: nlpResult.confidence_score,
+      intent: intentName,
+      confidence: confidenceScore,
       entities: nlpResult.entities
     }, 'Chatbot response berhasil');
 
@@ -140,18 +172,15 @@ const trainChatbot = async (req, res) => {
       return errorResponse(res, 'Training data harus berupa array', 400);
     }
 
-    // Kirim data training ke Python service
-    const trainingResponse = await axios.post(`${PYTHON_NLP_URL}/api/nlp/train`, {
-      training_data
-    }, {
-      timeout: 60000,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': req.headers.authorization
-      }
-    });
+    // Retrain NLP Manager dengan data baru
+    const success = await nlpManager.retrain(training_data);
 
-    successResponse(res, trainingResponse.data, 'Model berhasil dilatih');
+    if (success) {
+      const modelInfo = nlpManager.getModelInfo();
+      successResponse(res, modelInfo, 'Model berhasil dilatih');
+    } else {
+      errorResponse(res, 'Gagal melatih model chatbot', 500);
+    }
 
   } catch (error) {
     console.error('Train chatbot error:', error);
@@ -601,14 +630,103 @@ const getLowConfidenceResponse = (nlpResult) => {
   };
 };
 
-const getHelpResponse = () => {
+const getDateTimeResponse = () => {
+  const now = new Date();
+
+  // Format tanggal dan waktu dalam bahasa Indonesia
+  const hariMapping = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const bulanMapping = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  const hari = hariMapping[now.getDay()];
+  const tanggal = now.getDate();
+  const bulan = bulanMapping[now.getMonth()];
+  const tahun = now.getFullYear();
+
+  // Format waktu (jam:menit:detik)
+  const jam = String(now.getHours()).padStart(2, '0');
+  const menit = String(now.getMinutes()).padStart(2, '0');
+  const detik = String(now.getSeconds()).padStart(2, '0');
+
+  let message = `🕐 **Informasi Tanggal & Waktu**\n\n`;
+  message += `📅 **Hari:** ${hari}\n`;
+  message += `📆 **Tanggal:** ${tanggal} ${bulan} ${tahun}\n`;
+  message += `⏰ **Waktu:** ${jam}:${menit}:${detik} WIB\n\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  message += `Semoga harimu menyenangkan! 😊`;
+
   return {
-    message: `📚 Panduan Chatbot MIS Ar-Ruhama\n\n` +
-             `Saya dapat membantu Anda dengan:\n\n` +
-             `1️⃣ Jadwal Pelajaran\n2️⃣ Nilai & Rapor\n3️⃣ Presensi\n4️⃣ Pembayaran\n5️⃣ Informasi Sekolah\n\n` +
-             `Ketik pertanyaan Anda dengan bahasa natural!`,
-    data: null
+    message,
+    data: {
+      hari,
+      tanggal,
+      bulan,
+      tahun,
+      jam,
+      menit,
+      detik,
+      fullDate: `${hari}, ${tanggal} ${bulan} ${tahun}`,
+      fullTime: `${jam}:${menit}:${detik}`,
+      timestamp: now.toISOString()
+    }
   };
+};
+
+const getHelpResponse = () => {
+  let message = `📚 Panduan Chatbot MIS Ar-Ruhama\n\n`;
+  message += `Halo! Saya di sini untuk membantu Anda mengakses informasi sekolah dengan mudah. Anda tidak perlu menggunakan perintah khusus - cukup tanyakan dengan bahasa sehari-hari!\n\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  message += `📅 **Jadwal Pelajaran**\n`;
+  message += `Contoh pertanyaan:\n`;
+  message += `• "Jadwal hari ini"\n`;
+  message += `• "Jadwal hari senin"\n`;
+  message += `• "Kapan pelajaran matematika?"\n\n`;
+
+  message += `📊 **Nilai & Rapor**\n`;
+  message += `Contoh pertanyaan:\n`;
+  message += `• "Nilai saya"\n`;
+  message += `• "Berapa nilai matematika saya?"\n`;
+  message += `• "Lihat rapor saya"\n\n`;
+
+  message += `✅ **Presensi/Kehadiran**\n`;
+  message += `Contoh pertanyaan:\n`;
+  message += `• "Berapa persen kehadiran saya?"\n`;
+  message += `• "Berapa kali saya tidak masuk?"\n`;
+  message += `• "Rekap presensi bulan ini"\n\n`;
+
+  message += `💰 **Pembayaran**\n`;
+  message += `Contoh pertanyaan:\n`;
+  message += `• "Status pembayaran saya"\n`;
+  message += `• "Tagihan saya berapa?"\n`;
+  message += `• "Pembayaran bulan ini"\n\n`;
+
+  message += `📢 **Informasi Sekolah**\n`;
+  message += `Contoh pertanyaan:\n`;
+  message += `• "Informasi sekolah"\n`;
+  message += `• "Ada pengumuman apa?"\n`;
+  message += `• "Info terbaru"\n\n`;
+
+  message += `👤 **Profil & Data Diri**\n`;
+  message += `Contoh pertanyaan:\n`;
+  message += `• "Profil saya"\n`;
+  message += `• "Data saya"\n`;
+  message += `• "Kelas saya" (untuk siswa)\n`;
+  message += `• "Siswa di kelas saya" (untuk guru)\n\n`;
+
+  message += `🕐 **Tanggal & Waktu**\n`;
+  message += `Contoh pertanyaan:\n`;
+  message += `• "Sekarang hari apa?"\n`;
+  message += `• "Tanggal berapa sekarang?"\n`;
+  message += `• "Jam berapa sekarang?"\n\n`;
+
+  message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  message += `💡 **Tips:** Anda bisa bertanya dengan gaya bahasa Anda sendiri. Saya akan berusaha memahami maksud Anda!\n\n`;
+  message += `Jika ada yang kurang jelas, jangan ragu untuk bertanya ya!`;
+
+  return { message, data: null };
 };
 
 const getDefaultOrCustomResponse = async (intentId) => {
@@ -626,34 +744,1192 @@ const getDefaultOrCustomResponse = async (intentId) => {
   }
 
   return {
-    message: 'Maaf, saya belum memahami pertanyaan Anda. 😅\n\nKetik "bantuan" untuk panduan.',
+    message: 'Hmm, saya kurang yakin dengan maksud pertanyaan Anda. 🤔\n\nBisa diulang dengan kata-kata yang berbeda? Atau ketik "bantuan" untuk melihat contoh pertanyaan yang bisa saya jawab!',
     data: null
   };
 };
 
-// Import helper functions (copy dari response sebelumnya)
+// ==================== INTENT RESPONSE HANDLERS ====================
+
+/**
+ * Handler untuk intent jadwal pelajaran
+ */
 const getJadwalResponse = async (nlpResult, user) => {
-  // ... (sama seperti sebelumnya)
+  try {
+    const today = new Date().getDay(); // 0=Minggu, 1=Senin, dst
+    const hariMapping = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+    // Deteksi hari yang diminta dari message user
+    const message = nlpResult.raw?.utterance || nlpResult.raw?.message || '';
+    const lowerMessage = message.toLowerCase();
+
+    let targetHari = hariMapping[today]; // Default: hari ini
+
+    // Cek apakah user menyebutkan hari tertentu
+    if (lowerMessage.includes('senin')) targetHari = 'Senin';
+    else if (lowerMessage.includes('selasa')) targetHari = 'Selasa';
+    else if (lowerMessage.includes('rabu')) targetHari = 'Rabu';
+    else if (lowerMessage.includes('kamis')) targetHari = 'Kamis';
+    else if (lowerMessage.includes('jumat')) targetHari = 'Jumat';
+    else if (lowerMessage.includes('sabtu')) targetHari = 'Sabtu';
+    else if (lowerMessage.includes('minggu')) targetHari = 'Minggu';
+    else if (lowerMessage.includes('besok')) {
+      const tomorrow = (today + 1) % 7;
+      targetHari = hariMapping[tomorrow];
+    }
+
+    const hariIni = targetHari;
+
+    let jadwal = [];
+
+    if (user.role === 'siswa') {
+      // Ambil jadwal untuk siswa
+      const siswa = await db.Siswa.findOne({
+        where: { user_id: user.id },
+        include: [{ model: db.Kelas, as: 'kelas' }]
+      });
+
+      if (!siswa || !siswa.kelas_id) {
+        return {
+          message: 'Hmm, sepertinya Anda belum terdaftar di kelas manapun. 🤔\n\nCoba hubungi admin untuk memastikan Anda sudah masuk ke kelas yang benar ya!',
+          data: null
+        };
+      }
+
+      jadwal = await db.JadwalPelajaran.findAll({
+        where: {
+          kelas_id: siswa.kelas_id,
+          hari: hariIni
+        },
+        include: [
+          { model: db.MataPelajaran, as: 'mata_pelajaran' },
+          { model: db.Guru, as: 'guru' }
+        ],
+        order: [['jam_mulai', 'ASC']]
+      });
+
+      if (jadwal.length === 0) {
+        return {
+          message: `Wah, sepertinya tidak ada jadwal pelajaran untuk hari ${hariIni}. Selamat libur! 🎉\n\nNikmati waktu istirahat Anda ya!`,
+          data: null
+        };
+      }
+
+      let message = `📅 Jadwal Pelajaran Anda Hari ${hariIni}:\n\n`;
+      jadwal.forEach((j, idx) => {
+        message += `${idx + 1}. ${j.mata_pelajaran.nama_mapel}\n`;
+        message += `   ⏰ ${j.jam_mulai} - ${j.jam_selesai}\n`;
+        message += `   👨‍🏫 ${j.guru.nama_lengkap}\n`;
+        if (j.ruangan) message += `   🚪 Ruangan: ${j.ruangan}\n`;
+        message += `\n`;
+      });
+
+      return { message, data: jadwal };
+
+    } else if (user.role === 'guru') {
+      // Ambil jadwal mengajar untuk guru
+      const guru = await db.Guru.findOne({
+        where: { user_id: user.id }
+      });
+
+      if (!guru) {
+        return {
+          message: 'Hmm, sepertinya data guru Anda belum terdaftar di sistem. 🤔\n\nCoba hubungi admin untuk memastikan data Anda sudah lengkap ya!',
+          data: null
+        };
+      }
+
+      jadwal = await db.JadwalPelajaran.findAll({
+        where: {
+          guru_id: guru.id,
+          hari: hariIni
+        },
+        include: [
+          { model: db.MataPelajaran, as: 'mata_pelajaran' },
+          { model: db.Kelas, as: 'kelas' }
+        ],
+        order: [['jam_mulai', 'ASC']]
+      });
+
+      if (jadwal.length === 0) {
+        return {
+          message: `Sepertinya tidak ada jadwal mengajar untuk hari ${hariIni}. 😊\n\nWaktu istirahat yang baik untuk Anda!`,
+          data: null
+        };
+      }
+
+      let message = `📅 Jadwal Mengajar Anda Hari ${hariIni}:\n\n`;
+      jadwal.forEach((j, idx) => {
+        message += `${idx + 1}. ${j.mata_pelajaran.nama_mapel} - Kelas ${j.kelas.nama_kelas}\n`;
+        message += `   ⏰ ${j.jam_mulai} - ${j.jam_selesai}\n`;
+        if (j.ruangan) message += `   🚪 Ruangan: ${j.ruangan}\n`;
+        message += `\n`;
+      });
+
+      return { message, data: jadwal };
+    }
+
+    return {
+      message: 'Maaf, fitur jadwal hanya tersedia untuk siswa dan guru.',
+      data: null
+    };
+
+  } catch (error) {
+    console.error('Error getJadwalResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data jadwal Anda. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
 };
 
+/**
+ * Handler untuk intent nilai/rapor
+ */
 const getNilaiResponse = async (nlpResult, user) => {
-  // ... (sama seperti sebelumnya)
+  try {
+    if (user.role !== 'siswa') {
+      return {
+        message: 'Maaf, fitur nilai hanya tersedia untuk siswa.',
+        data: null
+      };
+    }
+
+    const siswa = await db.Siswa.findOne({
+      where: { user_id: user.id }
+    });
+
+    if (!siswa) {
+      return {
+        message: 'Maaf, data siswa Anda belum tersedia.',
+        data: null
+      };
+    }
+
+    // Ambil nilai rapor semester aktif
+    const nilai = await db.Rapor.findAll({
+      where: {
+        siswa_id: siswa.id,
+        semester: 'Ganjil', // TODO: Dynamic semester
+        tahun_ajaran: '2024/2025' // TODO: Dynamic tahun ajaran
+      },
+      include: [
+        { model: db.MataPelajaran, as: 'mata_pelajaran' }
+      ],
+      order: [[{ model: db.MataPelajaran, as: 'mata_pelajaran' }, 'nama_mapel', 'ASC']]
+    });
+
+    if (nilai.length === 0) {
+      return {
+        message: 'Hmm, sepertinya nilai rapor Anda belum tersedia untuk semester ini. 📚\n\nMungkin masih dalam proses input oleh guru. Coba tanyakan lagi nanti ya!',
+        data: null
+      };
+    }
+
+    // Hitung rata-rata
+    let totalNilai = 0;
+    nilai.forEach(n => {
+      totalNilai += parseFloat(n.nilai_akhir || 0);
+    });
+    const rataRata = (totalNilai / nilai.length).toFixed(2);
+
+    let message = `📊 Nilai Rapor Anda (Semester Ganjil 2024/2025):\n\n`;
+    nilai.forEach((n, idx) => {
+      message += `${idx + 1}. ${n.mata_pelajaran.nama_mapel}\n`;
+      message += `   Nilai: ${n.nilai_akhir || '-'}\n`;
+      if (n.predikat) message += `   Predikat: ${n.predikat}\n`;
+      message += `\n`;
+    });
+    message += `📈 Rata-rata: ${rataRata}\n`;
+
+    return { message, data: { nilai, rata_rata: rataRata } };
+
+  } catch (error) {
+    console.error('Error getNilaiResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data nilai Anda. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
 };
 
+/**
+ * Handler untuk intent presensi/kehadiran
+ */
 const getPresensiResponse = async (nlpResult, user) => {
-  // ... (sama seperti sebelumnya)
+  try {
+    if (user.role !== 'siswa') {
+      return {
+        message: 'Maaf, fitur presensi hanya tersedia untuk siswa.',
+        data: null
+      };
+    }
+
+    const siswa = await db.Siswa.findOne({
+      where: { user_id: user.id }
+    });
+
+    if (!siswa) {
+      return {
+        message: 'Maaf, data siswa Anda belum tersedia.',
+        data: null
+      };
+    }
+
+    // Ambil presensi bulan ini
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const presensi = await db.Presensi.findAll({
+      where: {
+        siswa_id: siswa.id,
+        tanggal: {
+          [db.sequelize.Sequelize.Op.between]: [startOfMonth, endOfMonth]
+        }
+      },
+      order: [['tanggal', 'DESC']]
+    });
+
+    // Hitung statistik
+    let hadir = 0, sakit = 0, izin = 0, alpha = 0;
+    presensi.forEach(p => {
+      switch(p.status.toLowerCase()) {
+        case 'hadir': hadir++; break;
+        case 'sakit': sakit++; break;
+        case 'izin': izin++; break;
+        case 'alpha': alpha++; break;
+      }
+    });
+
+    const total = presensi.length;
+    const persentaseHadir = total > 0 ? ((hadir / total) * 100).toFixed(1) : 0;
+
+    let message = `📊 Rekap Presensi Bulan Ini:\n\n`;
+    message += `✅ Hadir: ${hadir} hari\n`;
+    message += `🤒 Sakit: ${sakit} hari\n`;
+    message += `📝 Izin: ${izin} hari\n`;
+    message += `❌ Alpha: ${alpha} hari\n`;
+    message += `\n📈 Persentase Kehadiran: ${persentaseHadir}%\n`;
+
+    if (persentaseHadir < 75) {
+      message += `\n⚠️ Perhatian: Kehadiran Anda di bawah 75%. Tingkatkan kehadiran ya!`;
+    }
+
+    return {
+      message,
+      data: {
+        hadir, sakit, izin, alpha,
+        total,
+        persentase: persentaseHadir,
+        detail: presensi
+      }
+    };
+
+  } catch (error) {
+    console.error('Error getPresensiResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data presensi Anda. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
 };
 
+/**
+ * Handler untuk intent pembayaran
+ */
 const getPembayaranResponse = async (nlpResult, user) => {
-  // ... (sama seperti sebelumnya)
+  try {
+    if (user.role !== 'siswa') {
+      return {
+        message: 'Maaf, fitur pembayaran hanya tersedia untuk siswa.',
+        data: null
+      };
+    }
+
+    const siswa = await db.Siswa.findOne({
+      where: { user_id: user.id }
+    });
+
+    if (!siswa) {
+      return {
+        message: 'Maaf, data siswa Anda belum tersedia.',
+        data: null
+      };
+    }
+
+    // Ambil SEMUA list pembayaran (tagihan yang harus dibayar)
+    const listPembayaran = await db.ListPembayaran.findAll({
+      order: [['created_at', 'ASC']]
+    });
+
+    // Ambil pembayaran yang sudah dilakukan siswa
+    const pembayaranSiswa = await db.Pembayaran.findAll({
+      where: { siswa_id: siswa.id },
+      include: [
+        { model: db.ListPembayaran, as: 'jenis_pembayaran' }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    // Hitung total tagihan dari ListPembayaran
+    let totalTagihan = 0;
+    listPembayaran.forEach(lp => {
+      totalTagihan += parseFloat(lp.nominal || 0);
+    });
+
+    // Hitung total yang sudah dibayar (approved)
+    let totalDibayar = 0;
+    pembayaranSiswa.forEach(p => {
+      if (p.status === 'approved') {
+        totalDibayar += parseFloat(p.jumlah_bayar || 0);
+      }
+    });
+
+    const sisaTagihan = totalTagihan - totalDibayar;
+
+    // Build message
+    let message = `💰 Status Pembayaran Anda:\n\n`;
+    message += `💵 Total Tagihan: Rp ${totalTagihan.toLocaleString('id-ID')}\n`;
+    message += `✅ Sudah Dibayar: Rp ${totalDibayar.toLocaleString('id-ID')}\n`;
+    message += `⏳ Sisa Tagihan: Rp ${sisaTagihan.toLocaleString('id-ID')}\n\n`;
+
+    // Tampilkan riwayat pembayaran terakhir
+    if (pembayaranSiswa.length > 0) {
+      message += `📋 Riwayat Pembayaran Terakhir:\n\n`;
+      pembayaranSiswa.slice(0, 5).forEach((p, idx) => {
+        const tanggal = new Date(p.tanggal_bayar).toLocaleDateString('id-ID');
+        const statusIcon = p.status === 'approved' ? '✅' : p.status === 'pending' ? '⏳' : '❌';
+        const statusLabel = p.status === 'approved' ? 'Lunas' : p.status === 'pending' ? 'Menunggu Persetujuan' : 'Ditolak';
+
+        message += `${idx + 1}. ${p.jenis_pembayaran?.nama_pembayaran || 'Pembayaran'}\n`;
+        message += `   💰 Rp ${parseFloat(p.jumlah_bayar || 0).toLocaleString('id-ID')}\n`;
+        message += `   📅 ${tanggal}\n`;
+        message += `   Status: ${statusIcon} ${statusLabel}\n`;
+        if (p.catatan) {
+          message += `   📝 ${p.catatan}\n`;
+        }
+        message += `\n`;
+      });
+    } else {
+      message += `📋 Riwayat Pembayaran Terakhir:\n\n`;
+      message += `Belum ada pembayaran yang tercatat. 💰\n\n`;
+      message += `Anda dapat mengajukan pembayaran melalui menu Pembayaran di dashboard.\n\n`;
+    }
+
+    if (sisaTagihan > 0) {
+      message += `\n⚠️ Segera lunasi tagihan Anda!`;
+    } else if (totalTagihan > 0) {
+      message += `\n🎉 Semua tagihan sudah lunas!`;
+    } else {
+      message += `\nℹ️ Belum ada tagihan yang perlu dibayar.`;
+    }
+
+    return {
+      message,
+      data: {
+        total_tagihan: totalTagihan,
+        total_dibayar: totalDibayar,
+        sisa_tagihan: sisaTagihan,
+        list_pembayaran: listPembayaran,
+        pembayaran: pembayaranSiswa
+      }
+    };
+
+  } catch (error) {
+    console.error('Error getPembayaranResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data pembayaran Anda. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
 };
 
+/**
+ * Handler untuk intent informasi umum
+ */
 const getInformasiResponse = async (nlpResult) => {
-  // ... (sama seperti sebelumnya)
+  try {
+    // Ambil informasi terbaru (5 terbaru berdasarkan tanggal dibuat)
+    const informasi = await db.InformasiUmum.findAll({
+      include: [
+        { model: db.User, as: 'creator', attributes: ['username'] }
+      ],
+      order: [['created_at', 'DESC']],
+      limit: 5
+    });
+
+    if (informasi.length === 0) {
+      return {
+        message: 'Sepertinya belum ada informasi atau pengumuman terbaru dari sekolah. 📢\n\nTenang, saya akan update Anda jika ada info baru!',
+        data: null
+      };
+    }
+
+    let message = `📢 Informasi & Pengumuman Terbaru:\n\n`;
+    informasi.forEach((info, idx) => {
+      const tanggal = new Date(info.created_at).toLocaleDateString('id-ID');
+      message += `${idx + 1}. ${info.judul}\n`;
+      message += `   📅 ${tanggal}\n`;
+      message += `   📝 ${info.konten.substring(0, 100)}${info.konten.length > 100 ? '...' : ''}\n`;
+      if (info.jenis) message += `   🏷️ ${info.jenis}\n`;
+      message += `\n`;
+    });
+
+    return { message, data: informasi };
+
+  } catch (error) {
+    console.error('Error getInformasiResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil informasi sekolah. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
 };
 
-const getGreetingResponse = (user) => {
-  // ... (sama seperti sebelumnya)
+/**
+ * Handler untuk greeting/salam
+ */
+const getGreetingResponse = async (user) => {
+  try {
+    const hour = new Date().getHours();
+    let greeting = 'Selamat malam';
+
+    if (hour < 12) greeting = 'Selamat pagi';
+    else if (hour < 15) greeting = 'Selamat siang';
+    else if (hour < 18) greeting = 'Selamat sore';
+
+    let namaLengkap = user.username;
+    let roleText = 'Pengguna';
+
+    // Ambil nama lengkap dari database berdasarkan role
+    if (user.role === 'siswa') {
+      const siswa = await db.Siswa.findOne({
+        where: { user_id: user.id },
+        attributes: ['nama_lengkap']
+      });
+      console.log('DEBUG getGreetingResponse - siswa data:', { user_id: user.id, siswa: siswa ? { nama_lengkap: siswa.nama_lengkap } : null });
+      if (siswa && siswa.nama_lengkap) {
+        namaLengkap = siswa.nama_lengkap;
+      }
+      roleText = 'Siswa';
+    } else if (user.role === 'guru') {
+      const guru = await db.Guru.findOne({
+        where: { user_id: user.id },
+        attributes: ['nama_lengkap']
+      });
+      if (guru && guru.nama_lengkap) {
+        namaLengkap = guru.nama_lengkap;
+      }
+      roleText = 'Guru';
+    } else if (user.role === 'admin') {
+      roleText = 'Admin';
+    }
+
+    let message = `Halo, ${namaLengkap}! 👋\n\n`;
+    message += `${greeting}! Senang bertemu dengan Anda. `;
+
+    if (user.role === 'guru') {
+      message += `Saya di sini untuk membantu Anda mengelola dan mengakses informasi terkait kelas dan siswa yang Anda ajar.\n\n`;
+      message += `Anda bisa tanyakan hal-hal seperti:\n`;
+      message += `💬 "Berapa siswa di kelas saya?"\n`;
+      message += `💬 "Jadwal mengajar hari ini"\n`;
+      message += `💬 "Siapa saja siswa di kelas 1A?"\n`;
+      message += `💬 "Profil saya"\n`;
+      message += `💬 "Informasi sekolah"\n\n`;
+    } else if (user.role === 'siswa') {
+      message += `Saya di sini untuk membantu Anda mengakses informasi sekolah dengan mudah.\n\n`;
+      message += `Anda bisa tanyakan hal-hal seperti:\n`;
+      message += `💬 "Jadwal pelajaran hari ini"\n`;
+      message += `💬 "Nilai rapor saya"\n`;
+      message += `💬 "Berapa persen kehadiran saya?"\n`;
+      message += `💬 "Status pembayaran saya"\n`;
+      message += `💬 "Informasi sekolah"\n\n`;
+    } else if (user.role === 'admin') {
+      message += `Saya siap membantu Anda mengelola dan memantau sistem informasi madrasah.\n\n`;
+      message += `Anda bisa tanyakan hal-hal seperti:\n`;
+      message += `💬 "Data guru"\n`;
+      message += `💬 "Daftar siswa"\n`;
+      message += `💬 "Data kelas"\n`;
+      message += `💬 "Berapa total siswa?"\n`;
+      message += `💬 "Informasi sekolah"\n\n`;
+    } else {
+      message += `Saya siap membantu Anda mengelola sistem informasi madrasah.\n\n`;
+    }
+
+    message += `Jangan ragu untuk bertanya apa saja. Ketik "bantuan" jika butuh panduan lengkap!`;
+
+    return { message, data: null };
+  } catch (error) {
+    console.error('Error getGreetingResponse:', error);
+    const hour = new Date().getHours();
+    let greeting = 'Selamat malam';
+    if (hour < 12) greeting = 'Selamat pagi';
+    else if (hour < 15) greeting = 'Selamat siang';
+    else if (hour < 18) greeting = 'Selamat sore';
+
+    return {
+      message: `${greeting}! 👋\n\nSaya adalah chatbot MIS Ar-Ruhama. Ada yang bisa saya bantu?`,
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk intent profil/data diri
+ */
+const getProfilResponse = async (user) => {
+  try {
+    if (user.role === 'siswa') {
+      const siswa = await db.Siswa.findOne({
+        where: { user_id: user.id },
+        include: [
+          { model: db.Kelas, as: 'kelas', attributes: ['nama_kelas', 'tingkat'] },
+          { model: db.User, as: 'user', attributes: ['username'] }
+        ]
+      });
+
+      if (!siswa) {
+        return {
+          message: 'Hmm, sepertinya data siswa Anda belum terdaftar di sistem. 🤔\n\nCoba hubungi admin untuk memastikan data Anda sudah lengkap ya!',
+          data: null
+        };
+      }
+
+      let message = `👤 Profil Siswa Anda:\n\n`;
+      message += `📝 Nama Lengkap: ${siswa.nama_lengkap}\n`;
+      message += `🆔 NISN: ${siswa.nisn}\n`;
+      message += `🎓 Kelas: ${siswa.kelas?.nama_kelas || '-'}\n`;
+      message += `📚 Tingkat: ${siswa.kelas?.tingkat || '-'}\n`;
+      message += `👤 Username: ${siswa.user?.username || '-'}\n`;
+      if (siswa.jenis_kelamin) message += `⚧ Jenis Kelamin: ${siswa.jenis_kelamin}\n`;
+      if (siswa.tempat_lahir || siswa.tanggal_lahir) {
+        const tglLahir = siswa.tanggal_lahir ? new Date(siswa.tanggal_lahir).toLocaleDateString('id-ID') : '-';
+        message += `🎂 TTL: ${siswa.tempat_lahir || '-'}, ${tglLahir}\n`;
+      }
+      if (siswa.alamat) message += `🏠 Alamat: ${siswa.alamat}\n`;
+      if (siswa.telepon) message += `📞 Telepon: ${siswa.telepon}\n`;
+      if (siswa.nama_ayah) message += `👨 Ayah: ${siswa.nama_ayah}\n`;
+      if (siswa.nama_ibu) message += `👩 Ibu: ${siswa.nama_ibu}\n`;
+
+      return {
+        message,
+        data: {
+          nama_lengkap: siswa.nama_lengkap,
+          nisn: siswa.nisn,
+          kelas: siswa.kelas?.nama_kelas,
+          tingkat: siswa.kelas?.tingkat
+        }
+      };
+
+    } else if (user.role === 'guru') {
+      const guru = await db.Guru.findOne({
+        where: { user_id: user.id },
+        include: [
+          { model: db.User, as: 'user', attributes: ['username'] }
+        ]
+      });
+
+      if (!guru) {
+        return {
+          message: 'Hmm, sepertinya data guru Anda belum terdaftar di sistem. 🤔\n\nCoba hubungi admin untuk memastikan data Anda sudah lengkap ya!',
+          data: null
+        };
+      }
+
+      let message = `👤 Profil Guru Anda:\n\n`;
+      message += `📝 Nama Lengkap: ${guru.nama_lengkap}\n`;
+      message += `🆔 NIP: ${guru.nip}\n`;
+      message += `👤 Username: ${guru.user?.username || '-'}\n`;
+      if (guru.jenis_kelamin) message += `⚧ Jenis Kelamin: ${guru.jenis_kelamin}\n`;
+      if (guru.tempat_lahir || guru.tanggal_lahir) {
+        const tglLahir = guru.tanggal_lahir ? new Date(guru.tanggal_lahir).toLocaleDateString('id-ID') : '-';
+        message += `🎂 TTL: ${guru.tempat_lahir || '-'}, ${tglLahir}\n`;
+      }
+      if (guru.alamat) message += `🏠 Alamat: ${guru.alamat}\n`;
+      if (guru.telepon) message += `📞 Telepon: ${guru.telepon}\n`;
+      if (guru.email) message += `📧 Email: ${guru.email}\n`;
+
+      return {
+        message,
+        data: {
+          nama_lengkap: guru.nama_lengkap,
+          nip: guru.nip
+        }
+      };
+
+    } else {
+      return {
+        message: `👤 Profil Anda:\n\nUsername: ${user.username}\nRole: ${user.role}`,
+        data: { username: user.username, role: user.role }
+      };
+    }
+
+  } catch (error) {
+    console.error('Error getProfilResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data profil Anda. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk intent kelas guru (info kelas & siswa yang diajar)
+ */
+const getKelasGuruResponse = async (user) => {
+  try {
+    if (user.role !== 'guru') {
+      return {
+        message: 'Wah, informasi kelas dan siswa hanya bisa diakses oleh akun guru. 😊\n\nSeperti nya Anda login sebagai siswa atau admin. Coba tanyakan hal lain yang bisa saya bantu!',
+        data: null
+      };
+    }
+
+    const guru = await db.Guru.findOne({
+      where: { user_id: user.id }
+    });
+
+    if (!guru) {
+      return {
+        message: 'Maaf, data guru Anda belum tersedia.',
+        data: null
+      };
+    }
+
+    // Ambil semua jadwal mengajar guru (untuk mendapatkan kelas yang diajar)
+    const jadwalGuru = await db.JadwalPelajaran.findAll({
+      where: { guru_id: guru.id },
+      include: [
+        {
+          model: db.Kelas,
+          as: 'kelas',
+          attributes: ['id', 'nama_kelas', 'tingkat']
+        },
+        {
+          model: db.MataPelajaran,
+          as: 'mata_pelajaran',
+          attributes: ['nama_mapel']
+        }
+      ]
+    });
+
+    if (jadwalGuru.length === 0) {
+      return {
+        message: 'Sepertinya Anda belum terdaftar sebagai pengajar di kelas manapun. 🤔\n\nJika ini tidak sesuai, coba hubungi admin untuk memperbarui jadwal mengajar Anda ya!',
+        data: null
+      };
+    }
+
+    // Grup per kelas (unique kelas)
+    const kelasMap = new Map();
+    jadwalGuru.forEach(j => {
+      if (j.kelas) {
+        if (!kelasMap.has(j.kelas.id)) {
+          kelasMap.set(j.kelas.id, {
+            id: j.kelas.id,
+            nama_kelas: j.kelas.nama_kelas,
+            tingkat: j.kelas.tingkat,
+            mata_pelajaran: []
+          });
+        }
+        if (j.mata_pelajaran) {
+          kelasMap.get(j.kelas.id).mata_pelajaran.push(j.mata_pelajaran.nama_mapel);
+        }
+      }
+    });
+
+    const kelasList = Array.from(kelasMap.values());
+
+    // Hitung total siswa per kelas dan ambil detail siswa
+    let totalSiswa = 0;
+    for (const kelas of kelasList) {
+      // Ambil daftar siswa di kelas ini
+      const siswaList = await db.Siswa.findAll({
+        where: { kelas_id: kelas.id },
+        attributes: ['id', 'nama_lengkap', 'nisn', 'jenis_kelamin'],
+        order: [['nama_lengkap', 'ASC']]
+      });
+
+      kelas.jumlah_siswa = siswaList.length;
+      kelas.siswa_list = siswaList;
+      totalSiswa += siswaList.length;
+
+      // Hitung jumlah siswa laki-laki dan perempuan
+      kelas.laki_laki = siswaList.filter(s => s.jenis_kelamin === 'L').length;
+      kelas.perempuan = siswaList.filter(s => s.jenis_kelamin === 'P').length;
+
+      // Ambil jadwal mengajar untuk kelas ini
+      const jadwalKelas = jadwalGuru.filter(j => j.kelas && j.kelas.id === kelas.id);
+      kelas.jadwal_detail = jadwalKelas.map(j => ({
+        hari: j.hari,
+        jam_mulai: j.jam_mulai,
+        jam_selesai: j.jam_selesai,
+        mata_pelajaran: j.mata_pelajaran ? j.mata_pelajaran.nama_mapel : '-'
+      }));
+    }
+
+    let message = `👨‍🏫 Informasi Kelas yang Anda Ajar:\n\n`;
+    message += `📊 Ringkasan:\n`;
+    message += `📚 Total Kelas: ${kelasList.length} kelas\n`;
+    message += `👥 Total Siswa: ${totalSiswa} siswa\n\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    kelasList.forEach((kelas, idx) => {
+      message += `${idx + 1}. 📖 Kelas ${kelas.nama_kelas} (Tingkat ${kelas.tingkat})\n\n`;
+
+      // Info siswa
+      message += `   👥 Jumlah Siswa: ${kelas.jumlah_siswa} siswa\n`;
+      message += `      • Laki-laki: ${kelas.laki_laki} siswa\n`;
+      message += `      • Perempuan: ${kelas.perempuan} siswa\n\n`;
+
+      // Mata pelajaran yang diajar
+      const mapelUnique = [...new Set(kelas.mata_pelajaran)];
+      message += `   📚 Mata Pelajaran yang Anda Ajar:\n`;
+      mapelUnique.forEach(mapel => {
+        message += `      • ${mapel}\n`;
+      });
+      message += `\n`;
+
+      // Jadwal mengajar
+      if (kelas.jadwal_detail.length > 0) {
+        message += `   📅 Jadwal Mengajar:\n`;
+        kelas.jadwal_detail.forEach(jadwal => {
+          message += `      • ${jadwal.hari}, ${jadwal.jam_mulai}-${jadwal.jam_selesai} (${jadwal.mata_pelajaran})\n`;
+        });
+        message += `\n`;
+      }
+
+      // Daftar nama siswa
+      if (kelas.siswa_list.length > 0) {
+        message += `   📝 Daftar Siswa:\n`;
+        kelas.siswa_list.forEach((siswa, sIdx) => {
+          const jenkel = siswa.jenis_kelamin === 'L' ? '👦' : '👧';
+          message += `      ${sIdx + 1}. ${jenkel} ${siswa.nama_lengkap} (NISN: ${siswa.nisn})\n`;
+        });
+      }
+
+      message += `\n━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    });
+
+    return {
+      message,
+      data: {
+        total_kelas: kelasList.length,
+        total_siswa: totalSiswa,
+        kelas: kelasList
+      }
+    };
+
+  } catch (error) {
+    console.error('Error getKelasGuruResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data kelas Anda. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk admin - Data Guru
+ */
+const getDataGuruResponse = async (user) => {
+  try {
+    // Ambil semua guru
+    const guruList = await db.Guru.findAll({
+      include: [
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['username', 'is_active']
+        }
+      ],
+      order: [['nama_lengkap', 'ASC']]
+    });
+
+    if (guruList.length === 0) {
+      return {
+        message: 'Belum ada data guru yang terdaftar di sistem. 👨‍🏫',
+        data: null
+      };
+    }
+
+    // Hitung statistik
+    const totalGuru = guruList.length;
+    const guruAktif = guruList.filter(g => g.user && g.user.is_active).length;
+    const guruLakiLaki = guruList.filter(g => g.jenis_kelamin === 'L').length;
+    const guruPerempuan = guruList.filter(g => g.jenis_kelamin === 'P').length;
+
+    let message = `👨‍🏫 Data Guru MIS Ar-Ruhama\n\n`;
+    message += `📊 Statistik:\n`;
+    message += `👥 Total Guru: ${totalGuru} orang\n`;
+    message += `✅ Akun Aktif: ${guruAktif} orang\n`;
+    message += `👨 Laki-laki: ${guruLakiLaki} orang\n`;
+    message += `👩 Perempuan: ${guruPerempuan} orang\n\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    message += `📋 Daftar Guru:\n\n`;
+
+    guruList.forEach((guru, idx) => {
+      const jenkel = guru.jenis_kelamin === 'L' ? '👨' : '👩';
+      const status = guru.user && guru.user.is_active ? '✅' : '❌';
+      message += `${idx + 1}. ${jenkel} ${guru.nama_lengkap}\n`;
+      message += `   🆔 NIP: ${guru.nip}\n`;
+      if (guru.telepon) message += `   📞 ${guru.telepon}\n`;
+      if (guru.email) message += `   📧 ${guru.email}\n`;
+      message += `   Status: ${status} ${guru.user && guru.user.is_active ? 'Aktif' : 'Nonaktif'}\n\n`;
+    });
+
+    return {
+      message,
+      data: {
+        total: totalGuru,
+        aktif: guruAktif,
+        list: guruList
+      }
+    };
+
+  } catch (error) {
+    console.error('Error getDataGuruResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data guru. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk admin - Data Siswa
+ */
+const getDataSiswaResponse = async (user) => {
+  try {
+    // Ambil semua siswa
+    const siswaList = await db.Siswa.findAll({
+      include: [
+        {
+          model: db.Kelas,
+          as: 'kelas',
+          attributes: ['nama_kelas', 'tingkat']
+        },
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['username', 'is_active']
+        }
+      ],
+      order: [['nama_lengkap', 'ASC']]
+    });
+
+    if (siswaList.length === 0) {
+      return {
+        message: 'Belum ada data siswa yang terdaftar di sistem. 👨‍🎓',
+        data: null
+      };
+    }
+
+    // Hitung statistik
+    const totalSiswa = siswaList.length;
+    const siswaAktif = siswaList.filter(s => s.user && s.user.is_active).length;
+    const siswaLakiLaki = siswaList.filter(s => s.jenis_kelamin === 'L').length;
+    const siswaPerempuan = siswaList.filter(s => s.jenis_kelamin === 'P').length;
+
+    // Group by kelas
+    const siswaPerKelas = {};
+    siswaList.forEach(s => {
+      if (s.kelas) {
+        const kelasName = s.kelas.nama_kelas;
+        if (!siswaPerKelas[kelasName]) {
+          siswaPerKelas[kelasName] = [];
+        }
+        siswaPerKelas[kelasName].push(s);
+      }
+    });
+
+    let message = `👨‍🎓 Data Siswa MIS Ar-Ruhama\n\n`;
+    message += `📊 Statistik:\n`;
+    message += `👥 Total Siswa: ${totalSiswa} orang\n`;
+    message += `✅ Akun Aktif: ${siswaAktif} orang\n`;
+    message += `👦 Laki-laki: ${siswaLakiLaki} orang\n`;
+    message += `👧 Perempuan: ${siswaPerempuan} orang\n\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    message += `📋 Daftar Siswa per Kelas:\n\n`;
+
+    Object.keys(siswaPerKelas).sort().forEach((kelasName, idx) => {
+      const siswa = siswaPerKelas[kelasName];
+      message += `${idx + 1}. Kelas ${kelasName} (${siswa.length} siswa)\n\n`;
+
+      siswa.forEach((s, sIdx) => {
+        const jenkel = s.jenis_kelamin === 'L' ? '👦' : '👧';
+        const status = s.user && s.user.is_active ? '✅' : '❌';
+        message += `   ${sIdx + 1}. ${jenkel} ${s.nama_lengkap}\n`;
+        message += `      NISN: ${s.nisn} ${status}\n`;
+      });
+      message += `\n`;
+    });
+
+    return {
+      message,
+      data: {
+        total: totalSiswa,
+        aktif: siswaAktif,
+        per_kelas: siswaPerKelas,
+        list: siswaList
+      }
+    };
+
+  } catch (error) {
+    console.error('Error getDataSiswaResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data siswa. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk admin - Data Kelas
+ */
+const getDataKelasResponse = async (user) => {
+  try {
+    // Ambil semua kelas dengan wali kelas
+    const kelasList = await db.Kelas.findAll({
+      include: [
+        {
+          model: db.Guru,
+          as: 'wali_kelas',
+          attributes: ['nama_lengkap', 'nip']
+        }
+      ],
+      order: [['tingkat', 'ASC'], ['nama_kelas', 'ASC']]
+    });
+
+    if (kelasList.length === 0) {
+      return {
+        message: 'Belum ada data kelas yang terdaftar di sistem. 🏫',
+        data: null
+      };
+    }
+
+    // Hitung jumlah siswa per kelas
+    for (const kelas of kelasList) {
+      const jumlahSiswa = await db.Siswa.count({
+        where: { kelas_id: kelas.id }
+      });
+      kelas.jumlah_siswa = jumlahSiswa;
+    }
+
+    const totalKelas = kelasList.length;
+    const totalSiswa = kelasList.reduce((sum, k) => sum + k.jumlah_siswa, 0);
+
+    let message = `🏫 Data Kelas MIS Ar-Ruhama\n\n`;
+    message += `📊 Statistik:\n`;
+    message += `📚 Total Kelas: ${totalKelas} kelas\n`;
+    message += `👥 Total Siswa: ${totalSiswa} orang\n`;
+    message += `📈 Rata-rata per Kelas: ${totalKelas > 0 ? Math.round(totalSiswa / totalKelas) : 0} siswa\n\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    message += `📋 Daftar Kelas:\n\n`;
+
+    kelasList.forEach((kelas, idx) => {
+      message += `${idx + 1}. 📖 Kelas ${kelas.nama_kelas} (Tingkat ${kelas.tingkat})\n`;
+      message += `   👥 Jumlah Siswa: ${kelas.jumlah_siswa} siswa\n`;
+      message += `   📅 Tahun Ajaran: ${kelas.tahun_ajaran}\n`;
+      if (kelas.wali_kelas) {
+        message += `   👨‍🏫 Wali Kelas: ${kelas.wali_kelas.nama_lengkap}\n`;
+      } else {
+        message += `   👨‍🏫 Wali Kelas: Belum ditentukan\n`;
+      }
+      message += `\n`;
+    });
+
+    return {
+      message,
+      data: {
+        total: totalKelas,
+        total_siswa: totalSiswa,
+        list: kelasList
+      }
+    };
+
+  } catch (error) {
+    console.error('Error getDataKelasResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data kelas. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk Mata Pelajaran (untuk semua role)
+ */
+const getMataPelajaranResponse = async (user) => {
+  try {
+    // Ambil semua mata pelajaran
+    const mapelList = await db.MataPelajaran.findAll({
+      order: [['nama_mapel', 'ASC']]
+    });
+
+    if (mapelList.length === 0) {
+      return {
+        message: 'Belum ada data mata pelajaran yang terdaftar di sistem. 📚',
+        data: null
+      };
+    }
+
+    const totalMapel = mapelList.length;
+
+    let message = `📚 Daftar Mata Pelajaran MIS Ar-Ruhama\n\n`;
+    message += `📊 Total: ${totalMapel} mata pelajaran\n\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    mapelList.forEach((mapel, idx) => {
+      message += `${idx + 1}. ${mapel.nama_mapel}\n`;
+      if (mapel.kode_mapel) {
+        message += `   📝 Kode: ${mapel.kode_mapel}\n`;
+      }
+      if (mapel.deskripsi) {
+        message += `   ℹ️ ${mapel.deskripsi}\n`;
+      }
+      message += `\n`;
+    });
+
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    message += `💡 Semua mata pelajaran di atas diajarkan di madrasah kami!`;
+
+    return {
+      message,
+      data: {
+        total: totalMapel,
+        list: mapelList
+      }
+    };
+
+  } catch (error) {
+    console.error('Error getMataPelajaranResponse:', error);
+    return {
+      message: 'Wah, sepertinya ada kendala saat mengambil data mata pelajaran. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk contact offer (setelah 4x low confidence)
+ */
+const getContactOfferResponse = async (user) => {
+  try {
+    let message = '';
+
+    if (user.role === 'guru') {
+      message = `Hmm, sepertinya saya kesulitan memahami pertanyaan Anda. 🤔\n\n`;
+      message += `Saya sudah mencoba beberapa kali tapi belum bisa memberikan jawaban yang tepat.\n\n`;
+      message += `Apakah Anda ingin menghubungi admin secara langsung? 📞\n\n`;
+      message += `Ketik "ya" atau "tidak"`;
+    } else if (user.role === 'siswa') {
+      message = `Hmm, sepertinya saya kesulitan memahami pertanyaan Anda. 🤔\n\n`;
+      message += `Saya sudah mencoba beberapa kali tapi belum bisa memberikan jawaban yang tepat.\n\n`;
+      message += `Apakah Anda ingin menghubungi guru secara langsung? 📞\n\n`;
+      message += `Ketik "ya" atau "tidak"`;
+    } else {
+      message = `Maaf, saya kesulitan memahami pertanyaan Anda.\n\nCoba formulasikan pertanyaan dengan cara yang berbeda ya!`;
+    }
+
+    return { message, data: null };
+
+  } catch (error) {
+    console.error('Error getContactOfferResponse:', error);
+    return {
+      message: 'Maaf, saya mengalami kendala. Coba tanyakan lagi ya!',
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk konfirmasi YA (user mau kontak langsung)
+ */
+const getKonfirmasiYaResponse = async (user) => {
+  try {
+    // Cek apakah sebelumnya ada contact offer
+    const recentLog = await db.ChatbotLog.findOne({
+      where: { user_id: user.id },
+      order: [['created_at', 'DESC']]
+    });
+
+    // Jika tidak ada context contact offer, berikan response umum
+    if (!recentLog || !recentLog.bot_response.includes('menghubungi')) {
+      return {
+        message: 'Baik! Ada yang bisa saya bantu lagi? 😊',
+        data: null
+      };
+    }
+
+    let message = '';
+
+    if (user.role === 'guru') {
+      // Ambil nomor kepala madrasah dari settings atau hardcoded
+      const kepalaMadrasah = await db.Guru.findOne({
+        where: { jabatan: 'Kepala Madrasah' },
+        attributes: ['nama_lengkap', 'telepon']
+      });
+
+      if (kepalaMadrasah && kepalaMadrasah.telepon) {
+        message = `Baik! Berikut kontak Kepala Madrasah yang bisa Anda hubungi:\n\n`;
+        message += `👤 ${kepalaMadrasah.nama_lengkap}\n`;
+        message += `📞 ${kepalaMadrasah.telepon}\n\n`;
+        message += `Silakan hubungi beliau untuk bantuan lebih lanjut. 😊`;
+      } else {
+        message = `Baik! Untuk menghubungi admin, silakan datang ke kantor tata usaha atau hubungi nomor sekolah.\n\n`;
+        message += `Terima kasih! 😊`;
+      }
+    } else if (user.role === 'siswa') {
+      // Ambil wali kelas siswa
+      const siswa = await db.Siswa.findOne({
+        where: { user_id: user.id },
+        include: [
+          {
+            model: db.Kelas,
+            as: 'kelas',
+            include: [
+              {
+                model: db.Guru,
+                as: 'wali_kelas',
+                attributes: ['nama_lengkap', 'telepon']
+              }
+            ]
+          }
+        ]
+      });
+
+      if (siswa && siswa.kelas && siswa.kelas.wali_kelas && siswa.kelas.wali_kelas.telepon) {
+        message = `Baik! Berikut kontak Wali Kelas Anda yang bisa dihubungi:\n\n`;
+        message += `👨‍🏫 ${siswa.kelas.wali_kelas.nama_lengkap}\n`;
+        message += `📞 ${siswa.kelas.wali_kelas.telepon}\n\n`;
+        message += `Silakan hubungi beliau untuk bantuan lebih lanjut. 😊`;
+      } else {
+        message = `Baik! Untuk menghubungi guru, silakan datang ke kantor guru atau hubungi nomor sekolah.\n\n`;
+        message += `Terima kasih! 😊`;
+      }
+    }
+
+    return { message, data: null };
+
+  } catch (error) {
+    console.error('Error getKonfirmasiYaResponse:', error);
+    return {
+      message: 'Baik, terima kasih! Ada yang bisa saya bantu lagi?',
+      data: null
+    };
+  }
+};
+
+/**
+ * Handler untuk konfirmasi TIDAK
+ */
+const getKonfirmasiTidakResponse = async (user) => {
+  return {
+    message: 'Baik, tidak apa-apa! 😊\n\nSilakan tanyakan hal lain atau ketik "bantuan" untuk melihat panduan.',
+    data: null
+  };
 };
 
 module.exports = {
