@@ -128,8 +128,8 @@ const FloatingChatWidget = () => {
                 <MessageCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Chatbot MIS</h3>
-                <p className="text-emerald-100 text-xs">Selalu siap membantu Anda</p>
+                <h3 className="text-white font-semibold">MIRA</h3>
+                <p className="text-emerald-100 text-xs">Asisten Virtual MIS Ar-Ruhama</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

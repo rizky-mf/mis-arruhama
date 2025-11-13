@@ -128,6 +128,11 @@ const getChatbotResponse = async (req, res) => {
           response = getDateTimeResponse();
           break;
 
+        case 'hapus_chat':
+        case 'clear_chat':
+          response = getHapusChatResponse();
+          break;
+
         case 'help':
         case 'bantuan':
           response = getHelpResponse();
@@ -623,9 +628,14 @@ const analyzeIntentFallback = (message) => {
 };
 
 const getLowConfidenceResponse = (nlpResult) => {
+  const responses = [
+    `Hmm, aku kurang yakin nih maksudnya apa... 🤔\n\nBisa dijelaskan dengan kata-kata lain? Atau ketik "bantuan" untuk lihat apa aja yang bisa aku jawab ya!`,
+    `Waduh, maaf aku belum paham maksudnya 😅\n\nCoba tanya dengan cara lain atau ketik "bantuan" untuk panduan lengkap!`,
+    `Agak bingung nih aku... 😓\n\nBisa diulang dengan lebih jelas? Atau ketik "bantuan" untuk lihat menu yang tersedia!`
+  ];
+
   return {
-    message: `Maaf, saya kurang yakin memahami maksud Anda (confidence: ${(nlpResult.confidence_score * 100).toFixed(0)}%).\n\n` +
-             `Coba tanyakan dengan lebih jelas atau ketik "bantuan" untuk panduan.`,
+    message: responses[Math.floor(Math.random() * responses.length)],
     data: null
   };
 };
@@ -650,12 +660,23 @@ const getDateTimeResponse = () => {
   const menit = String(now.getMinutes()).padStart(2, '0');
   const detik = String(now.getSeconds()).padStart(2, '0');
 
-  let message = `🕐 **Informasi Tanggal & Waktu**\n\n`;
-  message += `📅 **Hari:** ${hari}\n`;
-  message += `📆 **Tanggal:** ${tanggal} ${bulan} ${tahun}\n`;
-  message += `⏰ **Waktu:** ${jam}:${menit}:${detik} WIB\n\n`;
-  message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-  message += `Semoga harimu menyenangkan! 😊`;
+  const intros = [
+    `Sekarang nih... ⏰\n\n`,
+    `Oke, ini waktu sekarang ya! 🕐\n\n`,
+    `Baik, aku kasih tau sekarang jam berapa... ⏱️\n\n`
+  ];
+
+  const closings = [
+    `\nSemoga harimu menyenangkan! 😊`,
+    `\nSelamat beraktivitas ya! ✨`,
+    `\nTetap semangat! 💪`
+  ];
+
+  let message = intros[Math.floor(Math.random() * intros.length)];
+  message += `📅 Hari **${hari}**\n`;
+  message += `📆 Tanggal **${tanggal} ${bulan} ${tahun}**\n`;
+  message += `⏰ Jam **${jam}:${menit}:${detik}** WIB`;
+  message += closings[Math.floor(Math.random() * closings.length)];
 
   return {
     message,
@@ -674,57 +695,68 @@ const getDateTimeResponse = () => {
   };
 };
 
+const getHapusChatResponse = () => {
+  const responses = [
+    `Tenang aja, kamu bisa hapus chat ini kok! 🗑️\n\nLihat icon **🗑️ (tempat sampah)** di pojok kanan atas? Klik aja icon itu untuk menghapus semua riwayat chat kita. Chat akan bersih kembali! ✨`,
+    `Bisa banget! Ada icon tempat sampah (🗑️) di bagian atas sebelah kanan. Klik itu kalau mau hapus semua chat ya! 😊`,
+    `Oke! Untuk hapus chat, klik aja icon **🗑️** yang ada di pojok kanan atas header chat ini. Semua riwayat percakapan bakal terhapus deh! 👍`
+  ];
+
+  return {
+    message: responses[Math.floor(Math.random() * responses.length)],
+    data: null
+  };
+};
+
 const getHelpResponse = () => {
-  let message = `📚 Panduan Chatbot MIS Ar-Ruhama\n\n`;
-  message += `Halo! Saya di sini untuk membantu Anda mengakses informasi sekolah dengan mudah. Anda tidak perlu menggunakan perintah khusus - cukup tanyakan dengan bahasa sehari-hari!\n\n`;
+  let message = `📚 **Hai! Aku MIRA** 🤖\n\n`;
+  message += `Aku adalah asisten virtual **MIS Ar-Ruhama** yang siap bantu kamu cari info sekolah dengan cepat dan mudah lho! Gak perlu pakai perintah khusus, tinggal tanya aja pakai bahasa sehari-hari! 😊\n\n`;
   message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
   message += `📅 **Jadwal Pelajaran**\n`;
-  message += `Contoh pertanyaan:\n`;
-  message += `• "Jadwal hari ini"\n`;
-  message += `• "Jadwal hari senin"\n`;
+  message += `Coba tanya:\n`;
+  message += `• "Jadwal hari ini dong"\n`;
+  message += `• "Besok ada pelajaran apa?"\n`;
   message += `• "Kapan pelajaran matematika?"\n\n`;
 
   message += `📊 **Nilai & Rapor**\n`;
-  message += `Contoh pertanyaan:\n`;
-  message += `• "Nilai saya"\n`;
-  message += `• "Berapa nilai matematika saya?"\n`;
-  message += `• "Lihat rapor saya"\n\n`;
+  message += `Coba tanya:\n`;
+  message += `• "Cek nilai rapor"\n`;
+  message += `• "Berapa nilai matematika aku?"\n`;
+  message += `• "Lihat nilai semester ini"\n\n`;
 
   message += `✅ **Presensi/Kehadiran**\n`;
-  message += `Contoh pertanyaan:\n`;
-  message += `• "Berapa persen kehadiran saya?"\n`;
-  message += `• "Berapa kali saya tidak masuk?"\n`;
+  message += `Coba tanya:\n`;
+  message += `• "Berapa persen kehadiran aku?"\n`;
+  message += `• "Aku udah berapa kali alpha?"\n`;
   message += `• "Rekap presensi bulan ini"\n\n`;
 
   message += `💰 **Pembayaran**\n`;
-  message += `Contoh pertanyaan:\n`;
-  message += `• "Status pembayaran saya"\n`;
-  message += `• "Tagihan saya berapa?"\n`;
-  message += `• "Pembayaran bulan ini"\n\n`;
+  message += `Coba tanya:\n`;
+  message += `• "Tagihan pembayaran"\n`;
+  message += `• "Udah lunas belum?"\n`;
+  message += `• "Berapa spp bulan ini?"\n\n`;
 
   message += `📢 **Informasi Sekolah**\n`;
-  message += `Contoh pertanyaan:\n`;
-  message += `• "Informasi sekolah"\n`;
+  message += `Coba tanya:\n`;
   message += `• "Ada pengumuman apa?"\n`;
-  message += `• "Info terbaru"\n\n`;
+  message += `• "Info terbaru dong"\n`;
+  message += `• "Kapan libur?"\n\n`;
 
   message += `👤 **Profil & Data Diri**\n`;
-  message += `Contoh pertanyaan:\n`;
-  message += `• "Profil saya"\n`;
-  message += `• "Data saya"\n`;
-  message += `• "Kelas saya" (untuk siswa)\n`;
-  message += `• "Siswa di kelas saya" (untuk guru)\n\n`;
+  message += `Coba tanya:\n`;
+  message += `• "Profil aku"\n`;
+  message += `• "Data kelas aku"\n`;
+  message += `• "Siswa di kelas aku berapa?" (guru)\n\n`;
 
   message += `🕐 **Tanggal & Waktu**\n`;
-  message += `Contoh pertanyaan:\n`;
+  message += `Coba tanya:\n`;
   message += `• "Sekarang hari apa?"\n`;
-  message += `• "Tanggal berapa sekarang?"\n`;
-  message += `• "Jam berapa sekarang?"\n\n`;
+  message += `• "Jam berapa sekarang?"\n`;
+  message += `• "Tanggal berapa hari ini?"\n\n`;
 
-  message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-  message += `💡 **Tips:** Anda bisa bertanya dengan gaya bahasa Anda sendiri. Saya akan berusaha memahami maksud Anda!\n\n`;
-  message += `Jika ada yang kurang jelas, jangan ragu untuk bertanya ya!`;
+  message += `💡 **Tips:** Kamu bisa tanya dengan gaya bahasamu sendiri. Aku bakal coba pahamin kok! Kalau aku bingung, aku bakal kasih tau dan minta kamu jelasin lagi ya 😄\n\n`;
+  message += `Jangan ragu untuk bertanya apa aja! Aku siap bantu! 🚀`;
 
   return { message, data: null };
 };
@@ -743,8 +775,14 @@ const getDefaultOrCustomResponse = async (intentId) => {
     };
   }
 
+  const defaultResponses = [
+    'Hmm, aku kurang yakin nih maksudnya apa... 🤔\n\nBisa tanya dengan kata-kata lain? Atau ketik "bantuan" untuk lihat menu lengkap!',
+    'Waduh maaf, aku belum ngerti maksudnya 😅\n\nCoba tanya lagi dengan cara berbeda ya! Atau ketik "bantuan" untuk lihat contoh pertanyaan.',
+    'Ehh aku agak bingung nih... 😓\n\nBisa dijelasin lagi gak? Atau mau lihat daftar yang bisa aku bantu? Ketik "bantuan" aja!'
+  ];
+
   return {
-    message: 'Hmm, saya kurang yakin dengan maksud pertanyaan Anda. 🤔\n\nBisa diulang dengan kata-kata yang berbeda? Atau ketik "bantuan" untuk melihat contoh pertanyaan yang bisa saya jawab!',
+    message: defaultResponses[Math.floor(Math.random() * defaultResponses.length)],
     data: null
   };
 };
@@ -1193,14 +1231,21 @@ const getInformasiResponse = async (nlpResult) => {
 const getGreetingResponse = async (user) => {
   try {
     const hour = new Date().getHours();
-    let greeting = 'Selamat malam';
+    const greetings = {
+      pagi: ['Selamat pagi', 'Pagi yang cerah', 'Hai! Pagi'],
+      siang: ['Selamat siang', 'Halo! Siang ini', 'Hai'],
+      sore: ['Selamat sore', 'Sore yang indah', 'Hai! Sore'],
+      malam: ['Selamat malam', 'Malam yang tenang', 'Hai']
+    };
 
-    if (hour < 12) greeting = 'Selamat pagi';
-    else if (hour < 15) greeting = 'Selamat siang';
-    else if (hour < 18) greeting = 'Selamat sore';
+    let greetingArray = greetings.malam;
+    if (hour < 10) greetingArray = greetings.pagi;
+    else if (hour < 15) greetingArray = greetings.siang;
+    else if (hour < 18) greetingArray = greetings.sore;
+
+    const greeting = greetingArray[Math.floor(Math.random() * greetingArray.length)];
 
     let namaLengkap = user.username;
-    let roleText = 'Pengguna';
 
     // Ambil nama lengkap dari database berdasarkan role
     if (user.role === 'siswa') {
@@ -1208,11 +1253,9 @@ const getGreetingResponse = async (user) => {
         where: { user_id: user.id },
         attributes: ['nama_lengkap']
       });
-      console.log('DEBUG getGreetingResponse - siswa data:', { user_id: user.id, siswa: siswa ? { nama_lengkap: siswa.nama_lengkap } : null });
       if (siswa && siswa.nama_lengkap) {
         namaLengkap = siswa.nama_lengkap;
       }
-      roleText = 'Siswa';
     } else if (user.role === 'guru') {
       const guru = await db.Guru.findOne({
         where: { user_id: user.id },
@@ -1221,55 +1264,48 @@ const getGreetingResponse = async (user) => {
       if (guru && guru.nama_lengkap) {
         namaLengkap = guru.nama_lengkap;
       }
-      roleText = 'Guru';
-    } else if (user.role === 'admin') {
-      roleText = 'Admin';
     }
 
-    let message = `Halo, ${namaLengkap}! 👋\n\n`;
-    message += `${greeting}! Senang bertemu dengan Anda. `;
+    const intros = [
+      `Halo ${namaLengkap}! 👋 ${greeting}!\n\nAku MIRA, asisten virtual MIS Ar-Ruhama. `,
+      `Hai ${namaLengkap}! ${greeting}, semoga harimu menyenangkan! 😊\n\nPerkenalkan, aku MIRA! `,
+      `${greeting}, ${namaLengkap}! Senang bisa membantu kamu hari ini! ✨\n\nAku MIRA, chatbot asisten kamu. `
+    ];
+    let message = intros[Math.floor(Math.random() * intros.length)];
 
     if (user.role === 'guru') {
-      message += `Saya di sini untuk membantu Anda mengelola dan mengakses informasi terkait kelas dan siswa yang Anda ajar.\n\n`;
-      message += `Anda bisa tanyakan hal-hal seperti:\n`;
+      message += `Aku siap membantu kamu mengakses info tentang kelas dan siswa yang kamu ajar.\n\n`;
+      message += `Kamu bisa tanya hal-hal seperti:\n`;
       message += `💬 "Berapa siswa di kelas saya?"\n`;
       message += `💬 "Jadwal mengajar hari ini"\n`;
-      message += `💬 "Siapa saja siswa di kelas 1A?"\n`;
-      message += `💬 "Profil saya"\n`;
-      message += `💬 "Informasi sekolah"\n\n`;
+      message += `💬 "Profil saya"\n\n`;
     } else if (user.role === 'siswa') {
-      message += `Saya di sini untuk membantu Anda mengakses informasi sekolah dengan mudah.\n\n`;
-      message += `Anda bisa tanyakan hal-hal seperti:\n`;
-      message += `💬 "Jadwal pelajaran hari ini"\n`;
-      message += `💬 "Nilai rapor saya"\n`;
-      message += `💬 "Berapa persen kehadiran saya?"\n`;
-      message += `💬 "Status pembayaran saya"\n`;
-      message += `💬 "Informasi sekolah"\n\n`;
+      message += `Aku di sini untuk bantu kamu cari informasi sekolah dengan cepat dan mudah lho!\n\n`;
+      message += `Coba tanya misalnya:\n`;
+      message += `💬 "Jadwal hari ini dong"\n`;
+      message += `💬 "Cek nilai rapor"\n`;
+      message += `💬 "Berapa persen kehadiran aku?"\n`;
+      message += `💬 "Tagihan pembayaran"\n\n`;
     } else if (user.role === 'admin') {
-      message += `Saya siap membantu Anda mengelola dan memantau sistem informasi madrasah.\n\n`;
-      message += `Anda bisa tanyakan hal-hal seperti:\n`;
-      message += `💬 "Data guru"\n`;
-      message += `💬 "Daftar siswa"\n`;
-      message += `💬 "Data kelas"\n`;
+      message += `Aku siap membantu kamu kelola sistem informasi madrasah.\n\n`;
+      message += `Kamu bisa tanyakan:\n`;
       message += `💬 "Berapa total siswa?"\n`;
-      message += `💬 "Informasi sekolah"\n\n`;
-    } else {
-      message += `Saya siap membantu Anda mengelola sistem informasi madrasah.\n\n`;
+      message += `💬 "Daftar guru"\n`;
+      message += `💬 "Data kelas"\n\n`;
     }
 
-    message += `Jangan ragu untuk bertanya apa saja. Ketik "bantuan" jika butuh panduan lengkap!`;
+    const closings = [
+      `Jangan sungkan bertanya ya! Ketik "bantuan" kalau butuh panduan lengkap 😊`,
+      `Kalau bingung mau nanya apa, coba ketik "bantuan" aja ya!`,
+      `Ada yang mau ditanyakan? Aku siap bantu! Ketik "bantuan" untuk lihat menu lengkap 🚀`
+    ];
+    message += closings[Math.floor(Math.random() * closings.length)];
 
     return { message, data: null };
   } catch (error) {
     console.error('Error getGreetingResponse:', error);
-    const hour = new Date().getHours();
-    let greeting = 'Selamat malam';
-    if (hour < 12) greeting = 'Selamat pagi';
-    else if (hour < 15) greeting = 'Selamat siang';
-    else if (hour < 18) greeting = 'Selamat sore';
-
     return {
-      message: `${greeting}! 👋\n\nSaya adalah chatbot MIS Ar-Ruhama. Ada yang bisa saya bantu?`,
+      message: `Hai! 👋 Aku MIRA, asisten virtual MIS Ar-Ruhama. Ada yang bisa aku bantu hari ini?`,
       data: null
     };
   }

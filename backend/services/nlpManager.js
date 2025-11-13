@@ -495,6 +495,24 @@ class ChatbotNLPManager {
     this.manager.addDocument('id', 'current time', 'datetime');
     this.manager.addDocument('id', 'current date', 'datetime');
 
+    // ========================================
+    // INTENT: HAPUS_CHAT (Clear Chat Feature) - NEW
+    // ========================================
+    this.manager.addDocument('id', 'hapus chat', 'hapus_chat');
+    this.manager.addDocument('id', 'hapus percakapan', 'hapus_chat');
+    this.manager.addDocument('id', 'clear chat', 'hapus_chat');
+    this.manager.addDocument('id', 'bersihkan chat', 'hapus_chat');
+    this.manager.addDocument('id', 'delete chat', 'hapus_chat');
+    this.manager.addDocument('id', 'bisa hapus chat', 'hapus_chat');
+    this.manager.addDocument('id', 'gimana cara hapus chat', 'hapus_chat');
+    this.manager.addDocument('id', 'cara hapus percakapan', 'hapus_chat');
+    this.manager.addDocument('id', 'aku bisa hapus chat ini ga', 'hapus_chat');
+    this.manager.addDocument('id', 'bisa hapus chat ini', 'hapus_chat');
+    this.manager.addDocument('id', 'hapus riwayat chat', 'hapus_chat');
+    this.manager.addDocument('id', 'reset chat', 'hapus_chat');
+    this.manager.addDocument('id', 'mulai chat baru', 'hapus_chat');
+    this.manager.addDocument('id', 'chat baru', 'hapus_chat');
+
     console.log('✅ Training data setup completed');
   }
 
