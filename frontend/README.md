@@ -1,7 +1,5 @@
 # MIS Ar-Ruhama - React Frontend
 
-Frontend React modern dengan **Floating Chat Widget** terintegrasi.
-
 ## 🚀 Quick Start
 
 ```bash

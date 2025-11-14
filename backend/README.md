@@ -85,25 +85,6 @@ Server akan berjalan di: `http://localhost:5000`
 
 ---
 
-## 🔒 Fitur Keamanan (Baru!)
-
-### ✅ Perbaikan yang Sudah Dilakukan:
-
-1. **Helmet** - Secure HTTP headers
-2. **CORS Protection** - Hanya allow origins tertentu
-3. **Rate Limiting** - Mencegah spam & brute force
-   - Global: 100 requests per 15 menit
-   - Login: 5 percobaan per 15 menit
-4. **JWT Authentication** - Token-based auth
-5. **Role-Based Access Control** - Admin, Guru, Siswa
-6. **Input Size Limit** - Max 10MB untuk request body
-7. **Removed Plain Password Storage** - Hanya bcrypt hash
-
----
-
-## 🤖 NLP Chatbot (Baru!)
-
-Backend sekarang menggunakan **node-nlp** untuk chatbot (tidak perlu Python service lagi).
 
 ### Fitur NLP:
 
@@ -123,18 +104,6 @@ Backend sekarang menggunakan **node-nlp** untuk chatbot (tidak perlu Python serv
 5. **pembayaran** - Pertanyaan SPP/tagihan
 6. **informasi** - Pengumuman sekolah
 7. **help** - Bantuan
-
-### Chatbot Response Handlers:
-
-Semua handler sudah **lengkap diimplementasi**:
-
-- ✅ `getJadwalResponse()` - Query jadwal dari database
-- ✅ `getNilaiResponse()` - Query nilai rapor
-- ✅ `getPresensiResponse()` - Rekap kehadiran
-- ✅ `getPembayaranResponse()` - Status pembayaran
-- ✅ `getInformasiResponse()` - Pengumuman terbaru
-- ✅ `getGreetingResponse()` - Sapaan dinamis
-- ✅ `getHelpResponse()` - Panduan penggunaan
 
 ---
 

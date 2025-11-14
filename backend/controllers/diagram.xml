@@ -1,0 +1,232 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="sistem-usulan" name="Sistem Usulan (Web MIS Ar-Ruhama)">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Swimlane: Siswa -->
+        <mxCell id="swimlane-siswa" value="Siswa" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;startSize=40;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="40" y="40" width="200" height="940" as="geometry" />
+        </mxCell>
+        
+        <!-- Start -->
+        <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="80" y="40" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="start-label" value="Mulai" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=11;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="70" y="20" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Buka web -->
+        <mxCell id="s1" value="Membuka web MIS Ar-Ruhama melalui browser" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="40" y="110" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: start -> s1 -->
+        <mxCell id="arrow1" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-siswa" source="start" target="s1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Login -->
+        <mxCell id="s2" value="Login dengan username dan password" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="40" y="210" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: s1 -> s2 -->
+        <mxCell id="arrow2" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-siswa" source="s1" target="s2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Akses dashboard -->
+        <mxCell id="s3" value="Mengakses dashboard siswa" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="40" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Melihat data -->
+        <mxCell id="s4" value="Melihat data nilai, jadwal, absensi" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="40" y="480" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: s3 -> s4 -->
+        <mxCell id="arrow3" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-siswa" source="s3" target="s4" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Buka chatbot -->
+        <mxCell id="s5" value="Bertanya ke chatbot MIRA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="40" y="600" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: s4 -> s5 -->
+        <mxCell id="arrow4" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-siswa" source="s4" target="s5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Terima respons -->
+        <mxCell id="s6" value="Menerima respons instan dari MIRA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="40" y="780" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- End -->
+        <mxCell id="end" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="80" y="870" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="end-inner" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#ffffff;strokeColor=#000000;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="88" y="878" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="end-label" value="Selesai" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=11;" parent="swimlane-siswa" vertex="1">
+          <mxGeometry x="60" y="910" width="80" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: s6 -> end -->
+        <mxCell id="arrow5" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-siswa" source="s6" target="end" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Swimlane: Sistem Web -->
+        <mxCell id="swimlane-sistem" value="Sistem Aplikasi Web" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;startSize=40;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="240" y="40" width="200" height="940" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Tampilkan login -->
+        <mxCell id="w1" value="Menampilkan halaman login" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-sistem" vertex="1">
+          <mxGeometry x="40" y="110" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Validasi login -->
+        <mxCell id="w2" value="Memvalidasi kredensial dengan database" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-sistem" vertex="1">
+          <mxGeometry x="40" y="210" width="120" height="70" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: w1 -> w2 -->
+        <mxCell id="arrow6" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-sistem" source="w1" target="w2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Buat session -->
+        <mxCell id="w3" value="Membuat session JWT dan redirect ke dashboard" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-sistem" vertex="1">
+          <mxGeometry x="40" y="320" width="120" height="70" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: w2 -> w3 -->
+        <mxCell id="arrow7" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-sistem" source="w2" target="w3" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Tampilkan dashboard -->
+        <mxCell id="w4" value="Menampilkan dashboard dengan data realtime" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-sistem" vertex="1">
+          <mxGeometry x="40" y="430" width="120" height="70" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: w3 -> w4 -->
+        <mxCell id="arrow8" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-sistem" source="w3" target="w4" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Query data -->
+        <mxCell id="w5" value="Mengambil data dari database sesuai request" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-sistem" vertex="1">
+          <mxGeometry x="40" y="540" width="120" height="70" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: w4 -> w5 -->
+        <mxCell id="arrow9" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-sistem" source="w4" target="w5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Terima input chat -->
+        <mxCell id="w6" value="Menerima input chat dan proses dengan NLP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-sistem" vertex="1">
+          <mxGeometry x="40" y="650" width="120" height="70" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: w5 -> w6 -->
+        <mxCell id="arrow10" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-sistem" source="w5" target="w6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Proses: Kirim respons -->
+        <mxCell id="w7" value="Mengirim respons MIRA ke user" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-sistem" vertex="1">
+          <mxGeometry x="40" y="760" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Arrow: w6 -> w7 -->
+        <mxCell id="arrow11" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;" parent="swimlane-sistem" source="w6" target="w7" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Swimlane: Database -->
+        <mxCell id="swimlane-database" value="Database & Server" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;startSize=40;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="440" y="40" width="200" height="940" as="geometry" />
+        </mxCell>
+        
+        <!-- Data: Tabel users -->
+        <mxCell id="d1" value="Tabel users (data login)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-database" vertex="1">
+          <mxGeometry x="40" y="210" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Data: Tabel siswa dll -->
+        <mxCell id="d2" value="Tabel siswa, nilai, jadwal, absensi" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-database" vertex="1">
+          <mxGeometry x="40" y="430" width="120" height="70" as="geometry" />
+        </mxCell>
+        
+        <!-- Data: Model NLP -->
+        <mxCell id="d3" value="Model NLP MIRA (chatbot-model.nlp)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" parent="swimlane-database" vertex="1">
+          <mxGeometry x="40" y="650" width="120" height="70" as="geometry" />
+        </mxCell>
+        
+        <!-- Cross-swimlane arrows -->
+        
+        <!-- s1 -> w1 -->
+        <mxCell id="cross1" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;" parent="1" source="s1" target="w1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- s2 -> w2 -->
+        <mxCell id="cross2" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;" parent="1" source="s2" target="w2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- w2 -> d1 (dashed) -->
+        <mxCell id="cross3" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;dashed=1;" parent="1" source="w2" target="d1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- w3 -> s3 -->
+        <mxCell id="cross4" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#000000;" parent="1" source="w3" target="s3" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- w4 -> d2 (dashed) -->
+        <mxCell id="cross5" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;dashed=1;" parent="1" source="w4" target="d2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- w5 -> d2 (dashed) -->
+        <mxCell id="cross6" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;dashed=1;" parent="1" source="w5" target="d2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- s4 -> w5 -->
+        <mxCell id="cross7" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;" parent="1" source="s4" target="w5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- s5 -> w6 -->
+        <mxCell id="cross8" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;" parent="1" source="s5" target="w6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- w6 -> d3 (dashed) -->
+        <mxCell id="cross9" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;dashed=1;" parent="1" source="w6" target="d3" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- w7 -> s6 -->
+        <mxCell id="cross10" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#000000;" parent="1" source="w7" target="s6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
