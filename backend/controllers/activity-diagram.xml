@@ -1,0 +1,369 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="activity-diagram" name="Activity Diagram - MIS Ar-Ruhama">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="ACTIVITY DIAGRAM - SISTEM MIS AR-RUHAMA" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="20" width="400" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Swimlanes -->
+        <mxCell id="swimlane-user" value="User (Siswa/Guru/Admin)" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;startSize=40;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="220" height="1300" as="geometry" />
+        </mxCell>
+
+        <!-- Start -->
+        <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="90" y="30" width="40" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Buka aplikasi -->
+        <mxCell id="act1" value="Buka aplikasi MIS Ar-Ruhama" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="50" y="100" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow1" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-user" source="start" target="act1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Input login -->
+        <mxCell id="act2" value="Input username dan password" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="50" y="240" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Decision: Login berhasil? -->
+        <mxCell id="dec1" value="Login berhasil?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=1;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="65" y="380" width="90" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Lihat dashboard -->
+        <mxCell id="act3" value="Lihat dashboard sesuai role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="50" y="520" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Decision: Pilih menu -->
+        <mxCell id="dec2" value="Pilih menu?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;fontStyle=1;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="65" y="620" width="90" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-act3-dec2" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-user" source="act3" target="dec2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Kelola data -->
+        <mxCell id="act4" value="Kelola data (CRUD)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="50" y="760" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Buka chatbot -->
+        <mxCell id="act5" value="Klik chatbot MIRA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="50" y="860" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Ketik pertanyaan -->
+        <mxCell id="act6" value="Ketik pertanyaan ke MIRA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="50" y="960" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-act5-act6" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-user" source="act5" target="act6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Terima respons -->
+        <mxCell id="act7" value="Terima respons dari MIRA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="50" y="1100" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Logout -->
+        <mxCell id="act8" value="Logout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="50" y="1190" width="120" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-act7-act8" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-user" source="act7" target="act8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- End -->
+        <mxCell id="end" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="90" y="1250" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="end-inner" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="swimlane-user">
+          <mxGeometry x="98" y="1258" width="24" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-act8-end" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-user" source="act8" target="end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Swimlane: Sistem -->
+        <mxCell id="swimlane-sistem" value="Sistem" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;startSize=40;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="260" y="70" width="280" height="1300" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Tampilkan halaman login -->
+        <mxCell id="sys1" value="Tampilkan halaman login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="80" y="100" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Validasi kredensial -->
+        <mxCell id="sys2" value="Validasi kredensial dengan database" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="70" y="240" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Generate JWT -->
+        <mxCell id="sys3" value="Generate JWT token dan buat session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="70" y="395" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-sys2-sys3" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-sistem" source="sys2" target="sys3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Load dashboard -->
+        <mxCell id="sys4" value="Load dashboard dan query data sesuai role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="70" y="520" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-sys3-sys4" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-sistem" source="sys3" target="sys4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Fork -->
+        <mxCell id="fork1" value="" style="shape=line;strokeWidth=3;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="60" y="660" width="160" height="10" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-dec2-fork" value="" style="endArrow=classic;html=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-sistem" target="fork1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="620" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Activity: Proses CRUD -->
+        <mxCell id="sys5" value="Proses request CRUD ke database" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="20" y="760" width="100" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-fork-sys5" value="Kelola Data" style="endArrow=classic;html=1;exitX=0.25;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;fontSize=9;" edge="1" parent="swimlane-sistem" source="fork1" target="sys5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Open chatbot -->
+        <mxCell id="sys6" value="Open chat widget MIRA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="140" y="760" width="100" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-fork-sys6" value="Chatbot" style="endArrow=classic;html=1;exitX=0.75;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;fontSize=9;" edge="1" parent="swimlane-sistem" source="fork1" target="sys6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Load NLP Model -->
+        <mxCell id="sys7" value="Load NLP Model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="140" y="860" width="100" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-sys6-sys7" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-sistem" source="sys6" target="sys7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Proses NLP -->
+        <mxCell id="sys8" value="Proses dengan NLP: preprocessing, intent classification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=9;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="130" y="960" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-sys7-sys8" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-sistem" source="sys7" target="sys8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Activity: Format response -->
+        <mxCell id="sys9" value="Format response dan kirim ke user" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="130" y="1100" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Join -->
+        <mxCell id="join1" value="" style="shape=line;strokeWidth=3;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="60" y="1175" width="160" height="10" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-sys5-join" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.25;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-sistem" source="sys5" target="join1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="70" y="1150" />
+              <mxPoint x="100" y="1150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow-sys9-join" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.75;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-sistem" source="sys9" target="join1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="1160" />
+              <mxPoint x="180" y="1160" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Activity: Clear session -->
+        <mxCell id="sys10" value="Clear session dan destroy token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=10;" vertex="1" parent="swimlane-sistem">
+          <mxGeometry x="80" y="1190" width="120" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow-join-sys10" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;" edge="1" parent="swimlane-sistem" source="join1" target="sys10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Swimlane: Database -->
+        <mxCell id="swimlane-database" value="Database" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;startSize=40;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="540" y="70" width="220" height="1300" as="geometry" />
+        </mxCell>
+
+        <!-- Data: Tabel Users -->
+        <mxCell id="db1" value="Query tabel Users untuk validasi" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffffff;strokeColor=#000000;fontSize=9;" vertex="1" parent="swimlane-database">
+          <mxGeometry x="60" y="230" width="100" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Data: Query dashboard -->
+        <mxCell id="db2" value="Query data dashboard (siswa, guru, nilai, dll)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffffff;strokeColor=#000000;fontSize=9;" vertex="1" parent="swimlane-database">
+          <mxGeometry x="60" y="510" width="100" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Data: CRUD -->
+        <mxCell id="db3" value="Execute CRUD operation (INSERT, UPDATE, DELETE)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffffff;strokeColor=#000000;fontSize=9;" vertex="1" parent="swimlane-database">
+          <mxGeometry x="60" y="750" width="100" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Data: NLP Model -->
+        <mxCell id="db4" value="Load model NLP dari file chatbot-model.nlp" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffffff;strokeColor=#000000;fontSize=9;" vertex="1" parent="swimlane-database">
+          <mxGeometry x="60" y="850" width="100" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Data: Query intent -->
+        <mxCell id="db5" value="Query database berdasarkan intent terdeteksi" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffffff;strokeColor=#000000;fontSize=9;" vertex="1" parent="swimlane-database">
+          <mxGeometry x="60" y="955" width="100" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Data: Log chat -->
+        <mxCell id="db6" value="Insert log ke ChatbotLog" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffffff;strokeColor=#000000;fontSize=9;" vertex="1" parent="swimlane-database">
+          <mxGeometry x="60" y="1095" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Cross-swimlane arrows -->
+
+        <!-- act1 -> sys1 -->
+        <mxCell id="cross1" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;dashed=1;" edge="1" parent="1" source="act1" target="sys1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- sys1 -> act2 -->
+        <mxCell id="cross2" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="sys1" target="act2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- act2 -> sys2 -->
+        <mxCell id="cross3" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="act2" target="sys2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- sys2 -> db1 -->
+        <mxCell id="cross4" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="sys2" target="db1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- db1 -> dec1 -->
+        <mxCell id="cross5" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="db1" target="dec1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- dec1 -> sys3 (Ya) -->
+        <mxCell id="cross6" value="Ya" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="dec1" target="sys3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- dec1 -> act2 (Tidak - loop back) -->
+        <mxCell id="cross7" value="Tidak" style="endArrow=classic;html=1;exitX=0;exitY=0.5;strokeColor=#000000;strokeWidth=2;fontSize=10;fontStyle=1;rounded=1;" edge="1" parent="1" source="dec1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="335" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="20" y="495" />
+              <mxPoint x="20" y="335" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- sys4 -> act3 -->
+        <mxCell id="cross8" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="sys4" target="act3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- sys4 -> db2 -->
+        <mxCell id="cross9" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;dashed=1;" edge="1" parent="1" source="sys4" target="db2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- dec2 -> act4 -->
+        <mxCell id="cross10" value="Kelola Data" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;fontSize=9;" edge="1" parent="1" source="dec2" target="act4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- act4 -> sys5 -->
+        <mxCell id="cross11" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="act4" target="sys5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- sys5 -> db3 -->
+        <mxCell id="cross12" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="sys5" target="db3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- dec2 -> act5 -->
+        <mxCell id="cross13" value="Chatbot" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#000000;strokeWidth=2;fontSize=9;" edge="1" parent="1" source="dec2" target="act5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- act5 -> sys6 -->
+        <mxCell id="cross14" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="act5" target="sys6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- sys7 -> db4 -->
+        <mxCell id="cross15" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="sys7" target="db4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- act6 -> sys8 -->
+        <mxCell id="cross16" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="act6" target="sys8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- sys8 -> db5 -->
+        <mxCell id="cross17" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;dashed=1;" edge="1" parent="1" source="sys8" target="db5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- db5 -> sys9 -->
+        <mxCell id="cross18" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="db5" target="sys9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- sys9 -> act7 -->
+        <mxCell id="cross19" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#000000;strokeWidth=2;dashed=1;" edge="1" parent="1" source="sys9" target="act7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- sys9 -> db6 -->
+        <mxCell id="cross20" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="sys9" target="db6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- act8 -> sys10 -->
+        <mxCell id="cross21" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#000000;strokeWidth=2;" edge="1" parent="1" source="act8" target="sys10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
