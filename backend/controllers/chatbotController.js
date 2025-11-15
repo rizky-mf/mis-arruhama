@@ -996,78 +996,246 @@ const getNilaiResponse = async (nlpResult, user) => {
  */
 const getPresensiResponse = async (nlpResult, user) => {
   try {
-    if (user.role !== 'siswa') {
-      return {
-        message: 'Maaf, fitur presensi hanya tersedia untuk siswa.',
-        data: null
-      };
-    }
+    // SISWA: Lihat presensi diri sendiri
+    if (user.role === 'siswa') {
+      const siswa = await db.Siswa.findOne({
+        where: { user_id: user.id }
+      });
 
-    const siswa = await db.Siswa.findOne({
-      where: { user_id: user.id }
-    });
+      if (!siswa) {
+        return {
+          message: 'Maaf, data siswa Anda belum tersedia.',
+          data: null
+        };
+      }
 
-    if (!siswa) {
-      return {
-        message: 'Maaf, data siswa Anda belum tersedia.',
-        data: null
-      };
-    }
+      // Ambil presensi bulan ini
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    // Ambil presensi bulan ini
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const presensi = await db.Presensi.findAll({
+        where: {
+          siswa_id: siswa.id,
+          tanggal: {
+            [db.sequelize.Sequelize.Op.between]: [startOfMonth, endOfMonth]
+          }
+        },
+        order: [['tanggal', 'DESC']]
+      });
 
-    const presensi = await db.Presensi.findAll({
-      where: {
-        siswa_id: siswa.id,
-        tanggal: {
-          [db.sequelize.Sequelize.Op.between]: [startOfMonth, endOfMonth]
+      // Hitung statistik
+      let hadir = 0, sakit = 0, izin = 0, alpha = 0;
+      presensi.forEach(p => {
+        switch(p.status.toLowerCase()) {
+          case 'hadir': hadir++; break;
+          case 'sakit': sakit++; break;
+          case 'izin': izin++; break;
+          case 'alpha': alpha++; break;
         }
-      },
-      order: [['tanggal', 'DESC']]
-    });
+      });
 
-    // Hitung statistik
-    let hadir = 0, sakit = 0, izin = 0, alpha = 0;
-    presensi.forEach(p => {
-      switch(p.status.toLowerCase()) {
-        case 'hadir': hadir++; break;
-        case 'sakit': sakit++; break;
-        case 'izin': izin++; break;
-        case 'alpha': alpha++; break;
+      const total = presensi.length;
+      const persentaseHadir = total > 0 ? ((hadir / total) * 100).toFixed(1) : 0;
+
+      let message = `📊 Rekap Presensi Bulan Ini:\n\n`;
+      message += `✅ Hadir: ${hadir} hari\n`;
+      message += `🤒 Sakit: ${sakit} hari\n`;
+      message += `📝 Izin: ${izin} hari\n`;
+      message += `❌ Alpha: ${alpha} hari\n`;
+      message += `\n📈 Persentase Kehadiran: ${persentaseHadir}%\n`;
+
+      if (persentaseHadir < 75) {
+        message += `\n⚠️ Perhatian: Kehadiran Anda di bawah 75%. Tingkatkan kehadiran ya!`;
       }
-    });
 
-    const total = presensi.length;
-    const persentaseHadir = total > 0 ? ((hadir / total) * 100).toFixed(1) : 0;
-
-    let message = `📊 Rekap Presensi Bulan Ini:\n\n`;
-    message += `✅ Hadir: ${hadir} hari\n`;
-    message += `🤒 Sakit: ${sakit} hari\n`;
-    message += `📝 Izin: ${izin} hari\n`;
-    message += `❌ Alpha: ${alpha} hari\n`;
-    message += `\n📈 Persentase Kehadiran: ${persentaseHadir}%\n`;
-
-    if (persentaseHadir < 75) {
-      message += `\n⚠️ Perhatian: Kehadiran Anda di bawah 75%. Tingkatkan kehadiran ya!`;
+      return {
+        message,
+        data: {
+          hadir, sakit, izin, alpha,
+          total,
+          persentase: persentaseHadir,
+          detail: presensi
+        }
+      };
     }
 
-    return {
-      message,
-      data: {
-        hadir, sakit, izin, alpha,
-        total,
-        persentase: persentaseHadir,
-        detail: presensi
+    // GURU: Lihat presensi siswa di kelas yang diajar
+    else if (user.role === 'guru') {
+      const guru = await db.Guru.findOne({
+        where: { user_id: user.id }
+      });
+
+      if (!guru) {
+        return {
+          message: 'Maaf, data guru Anda belum tersedia.',
+          data: null
+        };
       }
-    };
+
+      // Ambil kelas yang diajar guru hari ini
+      const now = new Date();
+      const today = new Date().getDay();
+      const hariMapping = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const hariIni = hariMapping[today];
+
+      // Deteksi apakah user menanyakan hari tertentu
+      const message = nlpResult.raw?.utterance || nlpResult.raw?.message || '';
+      const lowerMessage = message.toLowerCase();
+
+      let targetDate = new Date();
+      let targetHari = hariIni;
+
+      // Cek jika menanyakan "hari ini"
+      if (lowerMessage.includes('hari ini') || lowerMessage.includes('sekarang')) {
+        targetDate = new Date();
+        targetHari = hariIni;
+      }
+
+      // Ambil jadwal mengajar guru untuk hari yang ditargetkan
+      const jadwalHariIni = await db.JadwalPelajaran.findAll({
+        where: {
+          guru_id: guru.id,
+          hari: targetHari
+        },
+        include: [
+          { model: db.Kelas, as: 'kelas' },
+          { model: db.MataPelajaran, as: 'mata_pelajaran' }
+        ]
+      });
+
+      if (jadwalHariIni.length === 0) {
+        return {
+          message: `Sepertinya Anda tidak ada jadwal mengajar untuk hari ${targetHari}. 📅\n\nTidak ada data presensi yang bisa ditampilkan.`,
+          data: null
+        };
+      }
+
+      // Ambil semua siswa dari kelas yang diajar
+      const kelasIds = [...new Set(jadwalHariIni.map(j => j.kelas_id))];
+
+      const siswaList = await db.Siswa.findAll({
+        where: { kelas_id: kelasIds },
+        include: [{ model: db.Kelas, as: 'kelas' }],
+        order: [['kelas_id', 'ASC'], ['nama_lengkap', 'ASC']]
+      });
+
+      // Format tanggal target (hari ini)
+      const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+      // Ambil presensi untuk semua siswa di kelas yang diajar hari ini
+      const presensiHariIni = await db.Presensi.findAll({
+        where: {
+          siswa_id: siswaList.map(s => s.id),
+          tanggal: {
+            [db.sequelize.Sequelize.Op.between]: [startOfDay, endOfDay]
+          }
+        },
+        include: [
+          {
+            model: db.Siswa,
+            as: 'siswa',
+            include: [{ model: db.Kelas, as: 'kelas' }]
+          }
+        ]
+      });
+
+      // Hitung statistik per status
+      let hadir = 0, sakit = 0, izin = 0, alpha = 0, belumPresensi = 0;
+
+      const presensiMap = new Map();
+      presensiHariIni.forEach(p => {
+        presensiMap.set(p.siswa_id, p.status);
+        switch(p.status.toLowerCase()) {
+          case 'hadir': hadir++; break;
+          case 'sakit': sakit++; break;
+          case 'izin': izin++; break;
+          case 'alpha': alpha++; break;
+        }
+      });
+
+      // Siswa yang belum ada presensi
+      belumPresensi = siswaList.length - presensiHariIni.length;
+
+      let responseMessage = `📊 Rekap Presensi Siswa Hari ${targetHari}:\n\n`;
+      responseMessage += `📚 Kelas yang Anda ajar hari ini:\n`;
+      jadwalHariIni.forEach(j => {
+        responseMessage += `   • ${j.kelas.nama_kelas} (${j.mata_pelajaran.nama_mapel})\n`;
+      });
+      responseMessage += `\n`;
+
+      responseMessage += `👥 Total Siswa: ${siswaList.length} siswa\n\n`;
+      responseMessage += `✅ Hadir: ${hadir} siswa\n`;
+      responseMessage += `🤒 Sakit: ${sakit} siswa\n`;
+      responseMessage += `📝 Izin: ${izin} siswa\n`;
+      responseMessage += `❌ Alpha: ${alpha} siswa\n`;
+
+      if (belumPresensi > 0) {
+        responseMessage += `⏳ Belum Presensi: ${belumPresensi} siswa\n`;
+      }
+
+      const persentaseHadir = siswaList.length > 0 ? ((hadir / siswaList.length) * 100).toFixed(1) : 0;
+      responseMessage += `\n📈 Persentase Kehadiran: ${persentaseHadir}%\n`;
+
+      // Detail per kelas
+      const kelasGrouped = {};
+      siswaList.forEach(s => {
+        const kelasName = s.kelas.nama_kelas;
+        if (!kelasGrouped[kelasName]) {
+          kelasGrouped[kelasName] = [];
+        }
+        kelasGrouped[kelasName].push({
+          nama: s.nama_lengkap,
+          nisn: s.nisn,
+          status: presensiMap.get(s.id) || 'Belum Presensi'
+        });
+      });
+
+      responseMessage += `\n━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      responseMessage += `📋 Detail Presensi per Kelas:\n\n`;
+
+      Object.keys(kelasGrouped).forEach((kelasName, idx) => {
+        const siswa = kelasGrouped[kelasName];
+        responseMessage += `${idx + 1}. Kelas ${kelasName}:\n\n`;
+
+        siswa.forEach((s, sIdx) => {
+          let statusIcon = '⏳';
+          if (s.status.toLowerCase() === 'hadir') statusIcon = '✅';
+          else if (s.status.toLowerCase() === 'sakit') statusIcon = '🤒';
+          else if (s.status.toLowerCase() === 'izin') statusIcon = '📝';
+          else if (s.status.toLowerCase() === 'alpha') statusIcon = '❌';
+
+          responseMessage += `   ${sIdx + 1}. ${s.nama} ${statusIcon}\n`;
+          responseMessage += `      Status: ${s.status}\n`;
+        });
+        responseMessage += `\n`;
+      });
+
+      return {
+        message: responseMessage,
+        data: {
+          hari: targetHari,
+          total_siswa: siswaList.length,
+          hadir, sakit, izin, alpha, belum_presensi: belumPresensi,
+          persentase: persentaseHadir,
+          detail_per_kelas: kelasGrouped
+        }
+      };
+    }
+
+    // Role lain
+    else {
+      return {
+        message: 'Maaf, fitur presensi hanya tersedia untuk siswa dan guru.',
+        data: null
+      };
+    }
 
   } catch (error) {
     console.error('Error getPresensiResponse:', error);
     return {
-      message: 'Wah, sepertinya ada kendala saat mengambil data presensi Anda. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
+      message: 'Wah, sepertinya ada kendala saat mengambil data presensi. 😔\n\nCoba tanyakan lagi dalam beberapa saat ya!',
       data: null
     };
   }
