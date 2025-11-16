@@ -5,10 +5,12 @@ const morgan = require('morgan');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const swaggerUi = require('swagger-ui-express');
 require('dotenv').config();
 
 const { testConnection } = require('./config/database');
 const nlpManager = require('./services/nlpManager');
+const swaggerSpec = require('./config/swagger');
 
 // Initialize Express App
 const app = express();
@@ -67,12 +69,19 @@ app.use(morgan('dev'));
 // Static files (untuk upload)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'MIS AR RUHAMA API Docs'
+}));
+
 // Basic Route
 app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'MIS Ar-Ruhama API Server',
     version: '1.0.0',
+    documentation: '/api-docs',
     endpoints: {
       auth: '/api/auth',
       admin: '/api/admin',
@@ -147,6 +156,7 @@ const startServer = async () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV}`);
       console.log(`🌐 API URL: http://localhost:${PORT}`);
+      console.log(`📚 API Docs: http://localhost:${PORT}/api-docs`);
       console.log(`🗄️  Database: ${process.env.DB_NAME}`);
       console.log(`🤖 NLP: Ready with ${modelInfo.intents.length} intents`);
       console.log('='.repeat(50));
