@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import Layout from '../shared/Layout';
 import Header from '../shared/Header';
-import { BookOpen, Award, TrendingUp, CheckCircle, XCircle, User } from 'lucide-react';
-import { siswaAPI } from '../../services/api';
+import { BookOpen, Award, TrendingUp, CheckCircle, XCircle, User, FileText } from 'lucide-react';
+import { siswaAPI, settingsAPI } from '../../services/api';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const SiswaNilai = () => {
   const [nilaiData, setNilaiData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     loadNilai();
@@ -43,6 +46,156 @@ const SiswaNilai = () => {
     return parseFloat(nilaiAkhir) >= kkm ? 'lulus' : 'tidak_lulus';
   };
 
+  // Download PDF Rapor
+  const handleDownloadPDF = async () => {
+    if (!nilaiData || nilai.length === 0) {
+      alert('Belum ada nilai untuk di-download');
+      return;
+    }
+
+    setDownloadingPdf(true);
+
+    try {
+      // Create PDF
+      const doc = new jsPDF();
+
+      // Header
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text('RAPOR SISWA', 105, 20, { align: 'center' });
+      doc.text('MIS AR RUHAMA', 105, 28, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.line(20, 32, 190, 32);
+
+      // Student Info
+      const yStart = 40;
+      doc.setFontSize(10);
+
+      const leftCol = [
+        `NAMA           : ${siswa.nama}`,
+        `NISN           : ${siswa.nisn}`,
+        `Jenis Kelamin  : ${siswa.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}`
+      ];
+
+      const rightCol = [
+        `Madrasah       : MIS AR RUHAMA`,
+        `Kelas/Semester : ${siswa.kelas} / ${periode.semester}`,
+        `Tahun Pelajaran: ${periode.tahun_ajaran}`
+      ];
+
+      leftCol.forEach((text, i) => {
+        doc.text(text, 20, yStart + (i * 6));
+      });
+
+      rightCol.forEach((text, i) => {
+        doc.text(text, 105, yStart + (i * 6));
+      });
+
+      // Title section
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      doc.text('CAPAIAN KOMPETENSI', 20, yStart + 22);
+
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      doc.text('Kriteria Ketuntasan Minimal (KKM) = 70', 20, yStart + 28);
+
+      // Table data
+      const tableData = nilai.map((item, index) => [
+        (index + 1).toString(),
+        item.mata_pelajaran,
+        item.nilai_akhir ? parseFloat(item.nilai_akhir).toFixed(0) : '-',
+        item.predikat || '-'
+      ]);
+
+      // Generate table
+      autoTable(doc, {
+        startY: yStart + 32,
+        head: [[
+          'No',
+          'Mata Pelajaran',
+          'Nilai',
+          'Predikat'
+        ]],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 10,
+          cellPadding: 4,
+          halign: 'center'
+        },
+        headStyles: {
+          fillColor: [44, 95, 45],
+          textColor: [255, 255, 255],
+          lineWidth: 0.5,
+          lineColor: [0, 0, 0],
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          lineWidth: 0.5,
+          lineColor: [0, 0, 0]
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 15 },
+          1: { halign: 'left', cellWidth: 100 },
+          2: { halign: 'center', cellWidth: 30 },
+          3: { halign: 'center', cellWidth: 30 }
+        }
+      });
+
+      // Predikat legend
+      const finalY = doc.lastAutoTable.finalY + 10;
+
+      autoTable(doc, {
+        startY: finalY,
+        head: [[
+          { content: 'KKM', rowSpan: 2 },
+          { content: 'Predikat', colSpan: 4 }
+        ], [
+          'D', 'C', 'B', 'A'
+        ]],
+        body: [['70', '0 - 69', '70 - 79', '80 - 89', '90 - 100']],
+        theme: 'grid',
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          halign: 'center'
+        },
+        headStyles: {
+          fillColor: [255, 255, 255],
+          textColor: [0, 0, 0],
+          lineWidth: 0.5,
+          lineColor: [0, 0, 0],
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          lineWidth: 0.5,
+          lineColor: [0, 0, 0]
+        },
+        columnStyles: {
+          0: { cellWidth: 20 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 35 }
+        }
+      });
+
+      // Save PDF
+      const filename = `Rapor_${siswa.nama.replace(/\s+/g, '_')}_${periode.semester}_${periode.tahun_ajaran.replace('/', '-')}.pdf`;
+      doc.save(filename);
+
+      alert(`PDF rapor berhasil di-download!\n\nNama: ${siswa.nama}\nTotal Mata Pelajaran: ${nilai.length}`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Gagal membuat PDF rapor. Silakan coba lagi.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -76,10 +229,22 @@ const SiswaNilai = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <Header
-          title="Nilai & Rapor"
-          subtitle={`${siswa.nama} - ${siswa.kelas}`}
-        />
+        <div className="flex items-center justify-between">
+          <Header
+            title="Nilai & Rapor"
+            subtitle={`${siswa.nama} - ${siswa.kelas}`}
+          />
+          {nilai.length > 0 && (
+            <button
+              onClick={handleDownloadPDF}
+              disabled={downloadingPdf}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileText size={18} />
+              {downloadingPdf ? 'Downloading...' : 'Download PDF Rapor'}
+            </button>
+          )}
+        </div>
 
         {/* Info Periode */}
         <div className="bg-gradient-to-r from-emerald-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg">
