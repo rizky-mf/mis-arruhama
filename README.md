@@ -58,12 +58,7 @@ cd mis-arruhama
 
 ### 2. Setup Database
 
-**A. Buat Database MySQL:**
-```sql
-CREATE DATABASE mis_arruhama;
-```
-
-**B. Konfigurasi Database:**
+**Konfigurasi Database:**
 
 Edit file `backend/config/database.js`:
 ```javascript
