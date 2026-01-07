@@ -130,8 +130,8 @@ function JadwalMengajar() {
                           <div className="flex items-start gap-2">
                             <BookOpen className="w-4 h-4 text-emerald-600 mt-0.5" />
                             <div>
-                              <p className="font-bold text-gray-800">{jadwal.mata_pelajaran?.nama_mapel || '-'}</p>
-                              <p className="text-xs text-gray-500">{jadwal.mata_pelajaran?.kode_mapel || '-'}</p>
+                              <p className="font-bold text-gray-800">{jadwal.mataPelajaran?.nama_mapel || '-'}</p>
+                              <p className="text-xs text-gray-500">{jadwal.mataPelajaran?.kode_mapel || '-'}</p>
                             </div>
                           </div>
 
@@ -183,8 +183,8 @@ function JadwalMengajar() {
                         <div className="flex items-start gap-2">
                           <BookOpen className="w-4 h-4 text-emerald-600 mt-0.5" />
                           <div>
-                            <p className="font-bold text-gray-800">{jadwal.mata_pelajaran?.nama_mapel || '-'}</p>
-                            <p className="text-xs text-gray-500">{jadwal.mata_pelajaran?.kode_mapel || '-'}</p>
+                            <p className="font-bold text-gray-800">{jadwal.mataPelajaran?.nama_mapel || '-'}</p>
+                            <p className="text-xs text-gray-500">{jadwal.mataPelajaran?.kode_mapel || '-'}</p>
                           </div>
                         </div>
 

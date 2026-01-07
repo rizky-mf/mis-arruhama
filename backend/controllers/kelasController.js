@@ -103,7 +103,7 @@ const getKelasById = async (req, res) => {
           include: [
             {
               model: db.MataPelajaran,
-              as: 'mata_pelajaran',
+              as: 'mataPelajaran',
               attributes: ['nama_mapel']
             },
             {

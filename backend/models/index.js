@@ -62,7 +62,7 @@ MataPelajaran.hasMany(Rapor, { foreignKey: 'mata_pelajaran_id', as: 'nilai' });
 
 // Jadwal Pelajaran Relations
 JadwalPelajaran.belongsTo(Kelas, { foreignKey: 'kelas_id', as: 'kelas' });
-JadwalPelajaran.belongsTo(MataPelajaran, { foreignKey: 'mata_pelajaran_id', as: 'mata_pelajaran' });
+JadwalPelajaran.belongsTo(MataPelajaran, { foreignKey: 'mata_pelajaran_id', as: 'mataPelajaran' });
 JadwalPelajaran.belongsTo(Guru, { foreignKey: 'guru_id', as: 'guru' });
 
 // List Pembayaran Relations
@@ -87,7 +87,7 @@ Presensi.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
 // Rapor Relations
 Rapor.belongsTo(Siswa, { foreignKey: 'siswa_id', as: 'siswa' });
-Rapor.belongsTo(MataPelajaran, { foreignKey: 'mata_pelajaran_id', as: 'mata_pelajaran' });
+Rapor.belongsTo(MataPelajaran, { foreignKey: 'mata_pelajaran_id', as: 'mataPelajaran' });
 Rapor.belongsTo(Kelas, { foreignKey: 'kelas_id', as: 'kelas' });
 Rapor.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 

@@ -20,6 +20,9 @@ const PORT = process.env.PORT || 5000;
 // SECURITY MIDDLEWARE
 // ============================================
 
+// Trust proxy - Required for ngrok and reverse proxies
+app.set('trust proxy', 1);
+
 // Helmet - Secure HTTP headers
 app.use(helmet());
 
@@ -32,9 +35,16 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
+
+    // In development, allow all ngrok URLs
+    if (process.env.NODE_ENV === 'development' && origin && origin.includes('ngrok-free.app')) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -112,6 +122,8 @@ app.use('/api/presensi', require('./routes/presensi.routes'));
 app.use('/api/rapor', require('./routes/rapor.routes'));
 app.use('/api/settings', require('./routes/settings.routes'));
 app.use('/api/chatbot', require('./routes/chatbot.routes'));
+app.use('/api/excel', require('./routes/excelRoutes'));
+app.use('/api/jadwal', require('./routes/jadwalGridRoutes'));
 
 
 

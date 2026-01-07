@@ -3,12 +3,13 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './components/auth/Login';
+import Unauthorized from './components/auth/Unauthorized';
 import AdminDashboard from './components/admin/Dashboard';
 import AdminKelas from './components/admin/Kelas';
 import AdminGuru from './components/admin/Guru';
 import AdminSiswa from './components/admin/Siswa';
 import AdminMataPelajaran from './components/admin/MataPelajaran';
-import AdminJadwalPelajaran from './components/admin/JadwalPelajaran';
+import AdminJadwalPelajaran from './components/admin/JadwalPelajaranSimple';
 import AdminKeuangan from './components/admin/Keuangan';
 import AdminInformasi from './components/admin/Informasi';
 import AdminPresensi from './components/admin/Presensi';
@@ -38,6 +39,7 @@ function App() {
           <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
           {/* Admin Routes */}
           <Route

@@ -95,7 +95,7 @@ const getGuruById = async (req, res) => {
             },
             {
               model: db.MataPelajaran,
-              as: 'mata_pelajaran',
+              as: 'mataPelajaran',
               attributes: ['nama_mapel']
             }
           ]
@@ -357,7 +357,7 @@ const getKelasByGuru = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['nama_mapel']
         }
       ]

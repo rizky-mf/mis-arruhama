@@ -840,7 +840,7 @@ const getJadwalResponse = async (nlpResult, user) => {
           hari: hariIni
         },
         include: [
-          { model: db.MataPelajaran, as: 'mata_pelajaran' },
+          { model: db.MataPelajaran, as: 'mataPelajaran' },
           { model: db.Guru, as: 'guru' }
         ],
         order: [['jam_mulai', 'ASC']]
@@ -855,7 +855,7 @@ const getJadwalResponse = async (nlpResult, user) => {
 
       let message = `📅 Jadwal Pelajaran Anda Hari ${hariIni}:\n\n`;
       jadwal.forEach((j, idx) => {
-        message += `${idx + 1}. ${j.mata_pelajaran.nama_mapel}\n`;
+        message += `${idx + 1}. ${j.mataPelajaran.nama_mapel}\n`;
         message += `   ⏰ ${j.jam_mulai} - ${j.jam_selesai}\n`;
         message += `   👨‍🏫 ${j.guru.nama_lengkap}\n`;
         if (j.ruangan) message += `   🚪 Ruangan: ${j.ruangan}\n`;
@@ -883,7 +883,7 @@ const getJadwalResponse = async (nlpResult, user) => {
           hari: hariIni
         },
         include: [
-          { model: db.MataPelajaran, as: 'mata_pelajaran' },
+          { model: db.MataPelajaran, as: 'mataPelajaran' },
           { model: db.Kelas, as: 'kelas' }
         ],
         order: [['jam_mulai', 'ASC']]
@@ -898,7 +898,7 @@ const getJadwalResponse = async (nlpResult, user) => {
 
       let message = `📅 Jadwal Mengajar Anda Hari ${hariIni}:\n\n`;
       jadwal.forEach((j, idx) => {
-        message += `${idx + 1}. ${j.mata_pelajaran.nama_mapel} - Kelas ${j.kelas.nama_kelas}\n`;
+        message += `${idx + 1}. ${j.mataPelajaran.nama_mapel} - Kelas ${j.kelas.nama_kelas}\n`;
         message += `   ⏰ ${j.jam_mulai} - ${j.jam_selesai}\n`;
         if (j.ruangan) message += `   🚪 Ruangan: ${j.ruangan}\n`;
         message += `\n`;
@@ -952,9 +952,9 @@ const getNilaiResponse = async (nlpResult, user) => {
         tahun_ajaran: '2024/2025' // TODO: Dynamic tahun ajaran
       },
       include: [
-        { model: db.MataPelajaran, as: 'mata_pelajaran' }
+        { model: db.MataPelajaran, as: 'mataPelajaran' }
       ],
-      order: [[{ model: db.MataPelajaran, as: 'mata_pelajaran' }, 'nama_mapel', 'ASC']]
+      order: [[{ model: db.MataPelajaran, as: 'mataPelajaran' }, 'nama_mapel', 'ASC']]
     });
 
     if (nilai.length === 0) {
@@ -973,7 +973,7 @@ const getNilaiResponse = async (nlpResult, user) => {
 
     let message = `📊 Nilai Rapor Anda (Semester Ganjil 2024/2025):\n\n`;
     nilai.forEach((n, idx) => {
-      message += `${idx + 1}. ${n.mata_pelajaran.nama_mapel}\n`;
+      message += `${idx + 1}. ${n.mataPelajaran.nama_mapel}\n`;
       message += `   Nilai: ${n.nilai_akhir || '-'}\n`;
       if (n.predikat) message += `   Predikat: ${n.predikat}\n`;
       message += `\n`;
@@ -1100,7 +1100,7 @@ const getPresensiResponse = async (nlpResult, user) => {
         },
         include: [
           { model: db.Kelas, as: 'kelas' },
-          { model: db.MataPelajaran, as: 'mata_pelajaran' }
+          { model: db.MataPelajaran, as: 'mataPelajaran' }
         ]
       });
 
@@ -1161,7 +1161,7 @@ const getPresensiResponse = async (nlpResult, user) => {
       let responseMessage = `📊 Rekap Presensi Siswa Hari ${targetHari}:\n\n`;
       responseMessage += `📚 Kelas yang Anda ajar hari ini:\n`;
       jadwalHariIni.forEach(j => {
-        responseMessage += `   • ${j.kelas.nama_kelas} (${j.mata_pelajaran.nama_mapel})\n`;
+        responseMessage += `   • ${j.kelas.nama_kelas} (${j.mataPelajaran.nama_mapel})\n`;
       });
       responseMessage += `\n`;
 
@@ -1612,7 +1612,7 @@ const getKelasGuruResponse = async (user) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['nama_mapel']
         }
       ]
@@ -1637,8 +1637,8 @@ const getKelasGuruResponse = async (user) => {
             mata_pelajaran: []
           });
         }
-        if (j.mata_pelajaran) {
-          kelasMap.get(j.kelas.id).mata_pelajaran.push(j.mata_pelajaran.nama_mapel);
+        if (j.mataPelajaran) {
+          kelasMap.get(j.kelas.id).mata_pelajaran.push(j.mataPelajaran.nama_mapel);
         }
       }
     });
@@ -1665,12 +1665,24 @@ const getKelasGuruResponse = async (user) => {
 
       // Ambil jadwal mengajar untuk kelas ini
       const jadwalKelas = jadwalGuru.filter(j => j.kelas && j.kelas.id === kelas.id);
-      kelas.jadwal_detail = jadwalKelas.map(j => ({
-        hari: j.hari,
-        jam_mulai: j.jam_mulai,
-        jam_selesai: j.jam_selesai,
-        mata_pelajaran: j.mata_pelajaran ? j.mata_pelajaran.nama_mapel : '-'
-      }));
+
+      // Urutan hari untuk sorting
+      const dayOrder = { 'Senin': 1, 'Selasa': 2, 'Rabu': 3, 'Kamis': 4, 'Jumat': 5, 'Sabtu': 6, 'Minggu': 7 };
+
+      kelas.jadwal_detail = jadwalKelas
+        .map(j => ({
+          hari: j.hari,
+          jam_mulai: j.jam_mulai,
+          jam_selesai: j.jam_selesai,
+          mata_pelajaran: j.mataPelajaran ? j.mataPelajaran.nama_mapel : '-'
+        }))
+        .sort((a, b) => {
+          // Sort berdasarkan hari dulu
+          const hariDiff = (dayOrder[a.hari] || 99) - (dayOrder[b.hari] || 99);
+          if (hariDiff !== 0) return hariDiff;
+          // Kemudian sort berdasarkan jam
+          return a.jam_mulai.localeCompare(b.jam_mulai);
+        });
     }
 
     let message = `👨‍🏫 Informasi Kelas yang Anda Ajar:\n\n`;
@@ -1711,6 +1723,7 @@ const getKelasGuruResponse = async (user) => {
           const jenkel = siswa.jenis_kelamin === 'L' ? '👦' : '👧';
           message += `      ${sIdx + 1}. ${jenkel} ${siswa.nama_lengkap} (NISN: ${siswa.nisn})\n`;
         });
+        message += `\n`;
       }
 
       message += `\n━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
@@ -1967,45 +1980,154 @@ const getDataKelasResponse = async (user) => {
  */
 const getMataPelajaranResponse = async (user) => {
   try {
-    // Ambil semua mata pelajaran
-    const mapelList = await db.MataPelajaran.findAll({
-      order: [['nama_mapel', 'ASC']]
-    });
+    // Jika guru, tampilkan mata pelajaran yang diajar
+    if (user.role === 'guru') {
+      const guru = await db.Guru.findOne({
+        where: { user_id: user.id }
+      });
 
-    if (mapelList.length === 0) {
+      if (!guru) {
+        return {
+          message: 'Data guru tidak ditemukan. 😔',
+          data: null
+        };
+      }
+
+      // Ambil jadwal mengajar guru untuk mendapatkan mata pelajaran yang diajar
+      const jadwalMengajar = await db.JadwalPelajaran.findAll({
+        where: { guru_id: guru.id },
+        include: [
+          {
+            model: db.MataPelajaran,
+            as: 'mataPelajaran',
+            attributes: ['id', 'nama_mapel', 'kode_mapel', 'deskripsi']
+          },
+          {
+            model: db.Kelas,
+            as: 'kelas',
+            attributes: ['id', 'nama_kelas', 'tingkat']
+          }
+        ],
+        order: [
+          [{ model: db.MataPelajaran, as: 'mataPelajaran' }, 'nama_mapel', 'ASC'],
+          [{ model: db.Kelas, as: 'kelas' }, 'tingkat', 'ASC']
+        ]
+      });
+
+      if (jadwalMengajar.length === 0) {
+        return {
+          message: '📚 Anda belum memiliki jadwal mengajar yang terdaftar.\n\nSilakan hubungi admin untuk informasi lebih lanjut.',
+          data: null
+        };
+      }
+
+      // Kelompokkan berdasarkan mata pelajaran
+      const mapelMap = {};
+      jadwalMengajar.forEach(j => {
+        if (j.mataPelajaran) {
+          const mapelId = j.mataPelajaran.id;
+          if (!mapelMap[mapelId]) {
+            mapelMap[mapelId] = {
+              id: j.mataPelajaran.id,
+              nama_mapel: j.mataPelajaran.nama_mapel,
+              kode_mapel: j.mataPelajaran.kode_mapel,
+              deskripsi: j.mataPelajaran.deskripsi,
+              kelas_list: []
+            };
+          }
+          if (j.kelas) {
+            const kelasExists = mapelMap[mapelId].kelas_list.find(k => k.id === j.kelas.id);
+            if (!kelasExists) {
+              mapelMap[mapelId].kelas_list.push({
+                id: j.kelas.id,
+                nama_kelas: j.kelas.nama_kelas,
+                tingkat: j.kelas.tingkat
+              });
+            }
+          }
+        }
+      });
+
+      const mapelList = Object.values(mapelMap);
+      const totalMapel = mapelList.length;
+
+      let message = `📚 Mata Pelajaran yang Anda Ajar\n\n`;
+      message += `👨‍🏫 Guru: ${guru.nama_lengkap}\n`;
+      message += `📊 Total: ${totalMapel} mata pelajaran\n\n`;
+      message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+      mapelList.forEach((mapel, idx) => {
+        message += `${idx + 1}. ${mapel.nama_mapel}`;
+        if (mapel.kode_mapel) {
+          message += ` (${mapel.kode_mapel})`;
+        }
+        message += `\n`;
+
+        if (mapel.kelas_list.length > 0) {
+          message += `   🏫 Kelas: `;
+          const kelasNames = mapel.kelas_list.map(k => k.nama_kelas).join(', ');
+          message += kelasNames + `\n`;
+        }
+
+        if (mapel.deskripsi) {
+          message += `   ℹ️ ${mapel.deskripsi}\n`;
+        }
+        message += `\n`;
+      });
+
+      message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      message += `💡 Ini adalah daftar mata pelajaran yang Anda ajar saat ini.`;
+
       return {
-        message: 'Belum ada data mata pelajaran yang terdaftar di sistem. 📚',
-        data: null
+        message,
+        data: {
+          total: totalMapel,
+          list: mapelList
+        }
       };
     }
 
-    const totalMapel = mapelList.length;
+    // Untuk siswa atau admin, tampilkan semua mata pelajaran
+    else {
+      const mapelList = await db.MataPelajaran.findAll({
+        order: [['nama_mapel', 'ASC']]
+      });
 
-    let message = `📚 Daftar Mata Pelajaran MIS Ar-Ruhama\n\n`;
-    message += `📊 Total: ${totalMapel} mata pelajaran\n\n`;
-    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-    mapelList.forEach((mapel, idx) => {
-      message += `${idx + 1}. ${mapel.nama_mapel}\n`;
-      if (mapel.kode_mapel) {
-        message += `   📝 Kode: ${mapel.kode_mapel}\n`;
+      if (mapelList.length === 0) {
+        return {
+          message: 'Belum ada data mata pelajaran yang terdaftar di sistem. 📚',
+          data: null
+        };
       }
-      if (mapel.deskripsi) {
-        message += `   ℹ️ ${mapel.deskripsi}\n`;
-      }
-      message += `\n`;
-    });
 
-    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    message += `💡 Semua mata pelajaran di atas diajarkan di madrasah kami!`;
+      const totalMapel = mapelList.length;
 
-    return {
-      message,
-      data: {
-        total: totalMapel,
-        list: mapelList
-      }
-    };
+      let message = `📚 Daftar Mata Pelajaran MIS Ar-Ruhama\n\n`;
+      message += `📊 Total: ${totalMapel} mata pelajaran\n\n`;
+      message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+      mapelList.forEach((mapel, idx) => {
+        message += `${idx + 1}. ${mapel.nama_mapel}\n`;
+        if (mapel.kode_mapel) {
+          message += `   📝 Kode: ${mapel.kode_mapel}\n`;
+        }
+        if (mapel.deskripsi) {
+          message += `   ℹ️ ${mapel.deskripsi}\n`;
+        }
+        message += `\n`;
+      });
+
+      message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      message += `💡 Semua mata pelajaran di atas diajarkan di madrasah kami!`;
+
+      return {
+        message,
+        data: {
+          total: totalMapel,
+          list: mapelList
+        }
+      };
+    }
 
   } catch (error) {
     console.error('Error getMataPelajaranResponse:', error);

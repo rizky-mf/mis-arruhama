@@ -586,7 +586,7 @@ function Nilai() {
       const tableData = raporData.length > 0
         ? raporData.map((item, index) => [
             (index + 1).toString(),
-            item.mata_pelajaran?.nama_mapel || '-',
+            item.mataPelajaran?.nama_mapel || '-',
             item.nilai_akhir ? parseFloat(item.nilai_akhir).toFixed(0) : '-',
             item.predikat || '-'
           ])

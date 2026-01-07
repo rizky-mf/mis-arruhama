@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Search, Eye, Users } from 'lucide-react';
 import Layout from '../shared/Layout';
 import Header from '../shared/Header';
 import { adminAPI } from '../../services/api';
+import SiswaExcelActions from './SiswaExcelActions';
 
 const Siswa = () => {
   const [siswa, setSiswa] = useState([]);
@@ -161,7 +162,7 @@ const Siswa = () => {
 
         {/* Filter and Actions */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex flex-wrap gap-4 items-center justify-between mb-4">
             <div className="flex gap-3 flex-1 max-w-2xl">
               {/* Search */}
               <div className="relative flex-1">
@@ -197,6 +198,11 @@ const Siswa = () => {
               <Plus className="w-5 h-5" />
               Tambah Siswa
             </button>
+          </div>
+
+          {/* Excel Import/Export Actions */}
+          <div className="border-t border-gray-200 pt-4">
+            <SiswaExcelActions onImportSuccess={loadSiswa} />
           </div>
         </div>
 

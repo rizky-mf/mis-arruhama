@@ -69,7 +69,7 @@ exports.getDashboard = async (req, res) => {
       include: [
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'nama_mapel', 'kode_mapel']
         },
         {
@@ -170,7 +170,7 @@ exports.getDashboard = async (req, res) => {
           id: j.id,
           jam_mulai: j.jam_mulai,
           jam_selesai: j.jam_selesai,
-          mata_pelajaran: j.mata_pelajaran?.nama_mapel || '-',
+          mata_pelajaran: j.mataPelajaran?.nama_mapel || '-',
           guru: j.guru?.nama_lengkap || '-',
           ruangan: j.ruangan
         })),
@@ -219,7 +219,7 @@ exports.getJadwalPelajaran = async (req, res) => {
       include: [
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'nama_mapel', 'kode_mapel']
         },
         {
@@ -245,8 +245,8 @@ exports.getJadwalPelajaran = async (req, res) => {
           id: j.id,
           jam_mulai: j.jam_mulai,
           jam_selesai: j.jam_selesai,
-          mata_pelajaran: j.mata_pelajaran?.nama_mapel || '-',
-          kode_mapel: j.mata_pelajaran?.kode_mapel || '-',
+          mata_pelajaran: j.mataPelajaran?.nama_mapel || '-',
+          kode_mapel: j.mataPelajaran?.kode_mapel || '-',
           guru: j.guru?.nama_lengkap || '-',
           ruangan: j.ruangan
         }));
@@ -317,11 +317,11 @@ exports.getNilaiRapor = async (req, res) => {
       include: [
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'nama_mapel', 'kode_mapel']
         }
       ],
-      order: [['mata_pelajaran', 'nama_mapel', 'ASC']]
+      order: [[{ model: MataPelajaran, as: 'mataPelajaran' }, 'nama_mapel', 'ASC']]
     });
 
     // Get guru info for each mapel by finding who teaches it in this kelas
@@ -333,7 +333,7 @@ exports.getNilaiRapor = async (req, res) => {
       include: [
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id']
         },
         {
@@ -345,8 +345,8 @@ exports.getNilaiRapor = async (req, res) => {
     });
 
     jadwalKelas.forEach(j => {
-      if (j.mata_pelajaran && j.guru) {
-        guruMapelMap[j.mata_pelajaran.id] = j.guru.nama_lengkap;
+      if (j.mataPelajaran && j.guru) {
+        guruMapelMap[j.mataPelajaran.id] = j.guru.nama_lengkap;
       }
     });
 
@@ -385,9 +385,9 @@ exports.getNilaiRapor = async (req, res) => {
         },
         nilai: nilaiRapor.map(n => ({
           id: n.id,
-          mata_pelajaran: n.mata_pelajaran?.nama_mapel || '-',
-          kode_mapel: n.mata_pelajaran?.kode_mapel || '-',
-          guru: guruMapelMap[n.mata_pelajaran?.id] || '-',
+          mata_pelajaran: n.mataPelajaran?.nama_mapel || '-',
+          kode_mapel: n.mataPelajaran?.kode_mapel || '-',
+          guru: guruMapelMap[n.mataPelajaran?.id] || '-',
           kkm: 70, // Default KKM
           tugas: n.nilai_harian,
           uts: n.nilai_uts,

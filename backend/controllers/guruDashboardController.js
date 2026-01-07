@@ -56,7 +56,7 @@ exports.getDashboard = async (req, res) => {
         },
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'nama_mapel', 'kode_mapel']
         }
       ],
@@ -69,7 +69,7 @@ exports.getDashboard = async (req, res) => {
       include: [
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'nama_mapel']
         },
         {
@@ -192,7 +192,7 @@ exports.getDashboard = async (req, res) => {
         },
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['nama_mapel']
         },
         {
@@ -225,14 +225,14 @@ exports.getDashboard = async (req, res) => {
           jam_mulai: j.jam_mulai,
           jam_selesai: j.jam_selesai,
           kelas: j.kelas.nama_kelas,
-          mata_pelajaran: j.mata_pelajaran.nama_mapel,
+          mata_pelajaran: j.mataPelajaran.nama_mapel,
           ruangan: j.ruangan
         })),
         kelas_diampu: kelasData,
         recent_nilai: recentNilai.map(r => ({
           siswa: r.siswa.nama_lengkap,
           kelas: r.kelas.nama_kelas,
-          mata_pelajaran: r.mata_pelajaran.nama_mapel,
+          mata_pelajaran: r.mataPelajaran.nama_mapel,
           nilai_akhir: r.nilai_akhir,
           predikat: r.predikat,
           updated_at: r.updated_at
@@ -266,7 +266,7 @@ exports.getJadwal = async (req, res) => {
         },
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'nama_mapel', 'kode_mapel']
         }
       ],
@@ -394,7 +394,7 @@ exports.getMataPelajaranDiampu = async (req, res) => {
       include: [
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         }
       ],
@@ -403,7 +403,7 @@ exports.getMataPelajaranDiampu = async (req, res) => {
     });
 
     // Extract unique mata pelajaran
-    const mataPelajaran = jadwal.map(j => j.mata_pelajaran).filter(m => m !== null);
+    const mataPelajaran = jadwal.map(j => j.mataPelajaran).filter(m => m !== null);
 
     res.json({
       success: true,
@@ -597,7 +597,7 @@ exports.getInfoMengajar = async (req, res) => {
         },
         {
           model: MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'nama_mapel', 'kode_mapel']
         }
       ],
@@ -607,11 +607,11 @@ exports.getInfoMengajar = async (req, res) => {
     // Get unique mata pelajaran
     const uniqueMapel = {};
     jadwal.forEach(j => {
-      if (j.mata_pelajaran && !uniqueMapel[j.mata_pelajaran.id]) {
-        uniqueMapel[j.mata_pelajaran.id] = {
-          id: j.mata_pelajaran.id,
-          kode_mapel: j.mata_pelajaran.kode_mapel,
-          nama_mapel: j.mata_pelajaran.nama_mapel
+      if (j.mata_pelajaran && !uniqueMapel[j.mataPelajaran.id]) {
+        uniqueMapel[j.mataPelajaran.id] = {
+          id: j.mataPelajaran.id,
+          kode_mapel: j.mataPelajaran.kode_mapel,
+          nama_mapel: j.mataPelajaran.nama_mapel
         };
       }
     });
@@ -644,7 +644,7 @@ exports.getInfoMengajar = async (req, res) => {
           jam_mulai: j.jam_mulai,
           jam_selesai: j.jam_selesai,
           kelas: j.kelas ? j.kelas.nama_kelas : null,
-          mata_pelajaran: j.mata_pelajaran ? j.mata_pelajaran.nama_mapel : null,
+          mata_pelajaran: j.mata_pelajaran ? j.mataPelajaran.nama_mapel : null,
           ruangan: j.ruangan
         }))
       }

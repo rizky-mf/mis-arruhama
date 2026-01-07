@@ -1,0 +1,25 @@
+{
+  "name": "mis-arruhama-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-End testing with Selenium WebDriver for MIS Ar-Ruhama",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": ["selenium", "e2e", "testing", "webdriver"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "selenium-webdriver": "^4.16.0",
+    "chromedriver": "^120.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.e2e.js"],
+    "testTimeout": 60000,
+    "verbose": true
+  }
+}

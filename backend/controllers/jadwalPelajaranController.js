@@ -44,7 +44,7 @@ const getAllJadwalPelajaran = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         },
         {
@@ -104,7 +104,7 @@ const getJadwalByKelas = async (req, res) => {
       include: [
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['kode_mapel', 'nama_mapel']
         },
         {
@@ -167,7 +167,7 @@ const getJadwalByGuru = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['kode_mapel', 'nama_mapel']
         }
       ],
@@ -214,7 +214,7 @@ const getJadwalById = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         },
         {
@@ -394,7 +394,7 @@ const createJadwalPelajaran = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['kode_mapel', 'nama_mapel']
         },
         {
@@ -526,7 +526,7 @@ const updateJadwalPelajaran = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['kode_mapel', 'nama_mapel']
         },
         {

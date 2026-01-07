@@ -46,7 +46,7 @@ const getAllRapor = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         },
         {
@@ -115,7 +115,7 @@ const getRaporBySiswa = async (req, res) => {
       include: [
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['kode_mapel', 'nama_mapel']
         },
         {
@@ -204,13 +204,13 @@ const getRaporByKelas = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['kode_mapel', 'nama_mapel']
         }
       ],
       order: [
         ['siswa', 'nama_lengkap', 'ASC'],
-        ['mata_pelajaran', 'nama_mapel', 'ASC']
+        ['mataPelajaran', 'nama_mapel', 'ASC']
       ]
     });
 
@@ -260,7 +260,7 @@ const getRaporByKelas = async (req, res) => {
           };
         }
         siswaMap[siswaId].nilai.push({
-          mata_pelajaran: r.mata_pelajaran,
+          mata_pelajaran: r.mataPelajaran,
           nilai_akhir: r.nilai_akhir,
           predikat: r.predikat
         });
@@ -322,7 +322,7 @@ const getRaporById = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         },
         {
@@ -455,7 +455,7 @@ const createRapor = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['kode_mapel', 'nama_mapel']
         },
         {
@@ -534,7 +534,7 @@ const updateRapor = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['kode_mapel', 'nama_mapel']
         },
         {

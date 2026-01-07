@@ -1251,7 +1251,7 @@ exports.getAllJadwalPelajaran = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         },
         {
@@ -1293,7 +1293,7 @@ exports.getJadwalPelajaranById = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         },
         {
@@ -1392,7 +1392,7 @@ exports.createJadwalPelajaran = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         },
         {
@@ -1459,7 +1459,7 @@ exports.updateJadwalPelajaran = async (req, res) => {
         },
         {
           model: db.MataPelajaran,
-          as: 'mata_pelajaran',
+          as: 'mataPelajaran',
           attributes: ['id', 'kode_mapel', 'nama_mapel']
         },
         {

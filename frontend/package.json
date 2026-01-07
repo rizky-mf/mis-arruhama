@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "vite build && cd dist && git init && git add -A && git commit -m 'Deploy to GitHub Pages' && git push -f https://github.com/USERNAME/mis-arruhama.git main:gh-pages"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
