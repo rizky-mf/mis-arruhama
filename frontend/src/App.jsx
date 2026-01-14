@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './components/auth/Login';
 import Unauthorized from './components/auth/Unauthorized';
@@ -10,6 +11,7 @@ import AdminGuru from './components/admin/Guru';
 import AdminSiswa from './components/admin/Siswa';
 import AdminMataPelajaran from './components/admin/MataPelajaran';
 import AdminJadwalPelajaran from './components/admin/JadwalPelajaranSimple';
+import AdminVisualSchedule from './components/admin/VisualScheduleBuilder';
 import AdminKeuangan from './components/admin/Keuangan';
 import AdminInformasi from './components/admin/Informasi';
 import AdminPresensi from './components/admin/Presensi';
@@ -33,10 +35,11 @@ import SiswaPengaturan from './components/siswa/Pengaturan';
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
@@ -87,6 +90,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminJadwalPelajaran />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/jadwal-visual"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminVisualSchedule />
               </ProtectedRoute>
             }
           />
@@ -273,10 +284,11 @@ function App() {
               </div>
             }
           />
-          </Routes>
-        </BrowserRouter>
-      </ToastProvider>
-    </AuthProvider>
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -124,7 +124,7 @@ const getRaporBySiswa = async (req, res) => {
           attributes: ['nama_kelas', 'tingkat']
         }
       ],
-      order: [['mata_pelajaran', 'nama_mapel', 'ASC']]
+      order: [[{ model: db.MataPelajaran, as: 'mataPelajaran' }, 'nama_mapel', 'ASC']]
     });
 
     // Hitung statistik

@@ -1,14 +1,22 @@
-// components/admin/JadwalPelajaranSimple.jsx
 import { useState, useEffect } from 'react';
-import Layout from '../shared/Layout';
-import Header from '../shared/Header';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { adminAPI } from '../../services/api';
+import { useToast } from '../ui/Toast';
+import { Table } from 'lucide-react';
 
-const JadwalPelajaranSimple = () => {
+/**
+ * Visual Schedule Builder Component
+ * Displays schedule in visual grid format with colors and teacher photos
+ */
+const VisualScheduleBuilder = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+
   // State
   const [loading, setLoading] = useState(false);
   const [kelasList, setKelasList] = useState([]);
-  const [selectedTingkat, setSelectedTingkat] = useState('1');
   const [selectedKelas, setSelectedKelas] = useState(null);
   const [scheduleData, setScheduleData] = useState({});
   const [mataPelajaranList, setMataPelajaranList] = useState([]);
@@ -31,13 +39,22 @@ const JadwalPelajaranSimple = () => {
     { slot: 4, jam_mulai: '08:45', jam_selesai: '09:20' },
     { slot: 'ISTIRAHAT', jam_mulai: '09:20', jam_selesai: '09:55', label: 'ISTIRAHAT', isBreak: true },
     { slot: 5, jam_mulai: '09:55', jam_selesai: '10:30' },
-    { slot: 6, jam_mulai: '10:30', jam_selesai: '11:05' },
-    { slot: 7, jam_mulai: '11:05', jam_selesai: '11:40' }
+    { slot: 6, jam_mulai: '10:30', jam_selesai: '11:05' }
   ];
 
   const COLOR_PALETTE = [
-    '#93C5FD', '#FDE68A', '#DDD6FE', '#6EE7B7', '#FECACA', '#FED7AA',
-    '#A7F3D0', '#BFDBFE', '#C7D2FE', '#FBCFE8', '#E9D5FF', '#D1FAE5'
+    '#93C5FD', // blue-300
+    '#FDE68A', // yellow-200
+    '#DDD6FE', // violet-200
+    '#6EE7B7', // emerald-300
+    '#FECACA', // red-200
+    '#FED7AA', // orange-200
+    '#A7F3D0', // emerald-200
+    '#BFDBFE', // blue-200
+    '#C7D2FE', // indigo-200
+    '#FBCFE8', // pink-200
+    '#E9D5FF', // purple-200
+    '#D1FAE5'  // green-100
   ];
 
   // Load initial data
@@ -57,34 +74,27 @@ const JadwalPelajaranSimple = () => {
   const loadKelas = async () => {
     try {
       const response = await adminAPI.getKelas({ limit: 100 });
-      const data = response.data?.kelas || response.data || [];
-      setKelasList(Array.isArray(data) ? data : []);
-
-      // Auto-select first kelas of tingkat 1
-      const firstKelas = data.find(k => k.tingkat === 1);
-      if (firstKelas) setSelectedKelas(firstKelas);
+      setKelasList(response.data.kelas || []);
     } catch (error) {
-      console.error('Error loading kelas:', error);
+      showToast('error', 'Gagal memuat data kelas');
     }
   };
 
   const loadMataPelajaran = async () => {
     try {
       const response = await adminAPI.getMataPelajaran({ limit: 100 });
-      const data = response.data?.mata_pelajaran || response.data || [];
-      setMataPelajaranList(Array.isArray(data) ? data : []);
+      setMataPelajaranList(response.data.mata_pelajaran || []);
     } catch (error) {
-      console.error('Error loading mata pelajaran:', error);
+      showToast('error', 'Gagal memuat mata pelajaran');
     }
   };
 
   const loadGuru = async () => {
     try {
       const response = await adminAPI.getGuru({ limit: 100 });
-      const data = response.data?.guru || response.data || [];
-      setGuruList(Array.isArray(data) ? data : []);
+      setGuruList(response.data.guru || []);
     } catch (error) {
-      console.error('Error loading guru:', error);
+      showToast('error', 'Gagal memuat data guru');
     }
   };
 
@@ -92,7 +102,6 @@ const JadwalPelajaranSimple = () => {
     setLoading(true);
     try {
       const response = await adminAPI.getJadwalPelajaran({ kelas_id: selectedKelas.id, limit: 100 });
-      const jadwalList = response.data?.jadwal_pelajaran || response.data || [];
 
       // Group by day and time slot
       const grouped = {};
@@ -100,13 +109,9 @@ const JadwalPelajaranSimple = () => {
         grouped[day] = {};
       });
 
-      jadwalList.forEach(jadwal => {
+      response.data.jadwal_pelajaran?.forEach(jadwal => {
         const day = jadwal.hari.toUpperCase();
-
-        // Normalize time format: HH:MM:SS -> HH:MM
-        const jamMulai = jadwal.jam_mulai?.substring(0, 5) || jadwal.jam_mulai;
-        const jamSelesai = jadwal.jam_selesai?.substring(0, 5) || jadwal.jam_selesai;
-        const slotKey = `${jamMulai}-${jamSelesai}`;
+        const slotKey = `${jadwal.jam_mulai}-${jadwal.jam_selesai}`;
 
         if (!grouped[day]) grouped[day] = {};
         grouped[day][slotKey] = jadwal;
@@ -114,7 +119,7 @@ const JadwalPelajaranSimple = () => {
 
       setScheduleData(grouped);
     } catch (error) {
-      console.error('Error loading jadwal:', error);
+      showToast('error', 'Gagal memuat jadwal');
     } finally {
       setLoading(false);
     }
@@ -125,7 +130,11 @@ const JadwalPelajaranSimple = () => {
   };
 
   const handleCellClick = (day, timeSlot) => {
-    if (timeSlot.isBreak || !selectedKelas) return;
+    if (timeSlot.isBreak) return;
+    if (!selectedKelas) {
+      showToast('warning', 'Pilih kelas terlebih dahulu');
+      return;
+    }
 
     const slotKey = `${timeSlot.jam_mulai}-${timeSlot.jam_selesai}`;
     const existingJadwal = scheduleData[day]?.[slotKey];
@@ -151,7 +160,7 @@ const JadwalPelajaranSimple = () => {
 
   const handleSaveSchedule = async () => {
     if (!formData.mata_pelajaran_id || !formData.guru_id) {
-      alert('Mata pelajaran dan guru wajib diisi');
+      showToast('warning', 'Mata pelajaran dan guru wajib diisi');
       return;
     }
 
@@ -168,17 +177,19 @@ const JadwalPelajaranSimple = () => {
       };
 
       if (selectedCell.existingJadwal) {
+        // Update
         await adminAPI.updateJadwalPelajaran(selectedCell.existingJadwal.id, payload);
-        alert('Jadwal berhasil diupdate');
+        showToast('success', 'Jadwal berhasil diupdate');
       } else {
+        // Create
         await adminAPI.createJadwalPelajaran(payload);
-        alert('Jadwal berhasil ditambahkan');
+        showToast('success', 'Jadwal berhasil ditambahkan');
       }
 
       setShowModal(false);
       loadSchedule();
     } catch (error) {
-      alert(error.response?.data?.message || 'Gagal menyimpan jadwal');
+      showToast('error', error.response?.data?.message || 'Gagal menyimpan jadwal');
     } finally {
       setLoading(false);
     }
@@ -186,39 +197,27 @@ const JadwalPelajaranSimple = () => {
 
   const handleDeleteSchedule = async () => {
     if (!selectedCell.existingJadwal) return;
+
     if (!confirm('Hapus jadwal ini?')) return;
 
     setLoading(true);
     try {
       await adminAPI.deleteJadwalPelajaran(selectedCell.existingJadwal.id);
-      alert('Jadwal berhasil dihapus');
+      showToast('success', 'Jadwal berhasil dihapus');
       setShowModal(false);
       loadSchedule();
     } catch (error) {
-      alert('Gagal menghapus jadwal');
+      showToast('error', 'Gagal menghapus jadwal');
     } finally {
       setLoading(false);
     }
   };
 
   const renderCell = (day, timeSlot) => {
-    // ISTIRAHAT cell
     if (timeSlot.isBreak) {
       return (
         <div className="bg-gray-100 border-2 border-gray-300 p-2 h-24 flex items-center justify-center">
           <span className="font-semibold text-gray-600">{timeSlot.label}</span>
-        </div>
-      );
-    }
-
-    // UPACARA cell (Senin slot 1 - 07:00-07:35)
-    if (day === 'SENIN' && timeSlot.slot === 1) {
-      return (
-        <div className="bg-yellow-100 border-2 border-yellow-400 p-2 h-24 flex items-center justify-center">
-          <div className="text-center">
-            <div className="font-bold text-sm text-gray-800 uppercase">UPACARA</div>
-            <div className="text-xs text-gray-600 mt-1">07:00 - 07:35</div>
-          </div>
         </div>
       );
     }
@@ -246,81 +245,90 @@ const JadwalPelajaranSimple = () => {
     return (
       <div
         onClick={() => handleCellClick(day, timeSlot)}
-        className="border-2 border-gray-300 p-2 h-24 cursor-pointer hover:opacity-90 transition-opacity"
+        className="border-2 border-gray-300 p-2 h-24 cursor-pointer hover:opacity-90 transition-opacity flex items-center gap-2"
         style={{ backgroundColor: bgColor }}
       >
-        <div className="h-full flex flex-col justify-center">
-          <div className="font-semibold text-sm text-gray-800 uppercase leading-tight mb-1">
+        <div className="flex-1">
+          <div className="font-semibold text-xs text-gray-800 uppercase leading-tight">
             {mataPelajaran?.nama_mapel || 'Unknown'}
           </div>
-          {guru && (
-            <div className="text-xs text-gray-700 font-medium">
-              {guru.nama_lengkap}
-            </div>
-          )}
           {jadwal.ruangan && (
             <div className="text-xs text-gray-600 mt-1">
               Ruang: {jadwal.ruangan}
             </div>
           )}
         </div>
+
+        {guru?.foto && (
+          <div className="w-12 h-12 flex-shrink-0">
+            <img
+              src={guru.foto}
+              alt={guru.nama_lengkap}
+              className="w-full h-full object-cover rounded border-2 border-white shadow"
+              onError={(e) => {
+                e.target.src = 'https://via.placeholder.com/50?text=No+Photo';
+              }}
+            />
+          </div>
+        )}
       </div>
     );
   };
 
-  const filteredKelas = kelasList.filter(k => k.tingkat === parseInt(selectedTingkat));
-
   return (
-    <Layout>
-      <Header title="Jadwal Pelajaran" subtitle="Kelola jadwal pelajaran per kelas" />
-
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tingkat
-            </label>
-            <select
-              value={selectedTingkat}
-              onChange={(e) => {
-                setSelectedTingkat(e.target.value);
-                const firstKelas = filteredKelas.find(k => k.tingkat === parseInt(e.target.value));
-                setSelectedKelas(firstKelas || null);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-[1800px] mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">
+              📅 Jadwal Pelajaran - Visual Builder
+            </h1>
+            <button
+              onClick={() => navigate('/admin/jadwal')}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all"
             >
-              {[1, 2, 3, 4, 5, 6].map(t => (
-                <option key={t} value={t}>Kelas {t}</option>
-              ))}
-            </select>
+              <Table className="w-5 h-5" />
+              <span className="font-medium">Mode Tabel</span>
+            </button>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kelas <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={selectedKelas?.id || ''}
-              onChange={(e) => {
-                const kelas = kelasList.find(k => k.id === parseInt(e.target.value));
-                setSelectedKelas(kelas);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            >
-              <option value="">-- Pilih Kelas --</option>
-              {filteredKelas.map(kelas => (
-                <option key={kelas.id} value={kelas.id}>
-                  {kelas.nama_kelas}
-                </option>
-              ))}
-            </select>
+          {/* Filter */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1 max-w-md">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pilih Kelas
+              </label>
+              <select
+                value={selectedKelas?.id || ''}
+                onChange={(e) => {
+                  const kelas = kelasList.find(k => k.id === parseInt(e.target.value));
+                  setSelectedKelas(kelas);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              >
+                <option value="">-- Pilih Kelas --</option>
+                {kelasList.map(kelas => (
+                  <option key={kelas.id} value={kelas.id}>
+                    {kelas.nama_kelas} - Tingkat {kelas.tingkat} ({kelas.tahun_ajaran})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedKelas && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2">
+                <div className="text-sm text-emerald-800">
+                  <span className="font-semibold">Kelas Terpilih:</span> {selectedKelas.nama_kelas}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Schedule Grid */}
         {selectedKelas ? (
-          <div className="overflow-x-auto">
+          <div className="bg-white rounded-lg shadow-md p-6 overflow-x-auto">
             <div className="min-w-[1400px]">
               <table className="w-full border-collapse">
                 <thead>
@@ -377,8 +385,10 @@ const JadwalPelajaranSimple = () => {
             </div>
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-500">
-            👆 Pilih kelas terlebih dahulu untuk menampilkan jadwal
+          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+            <div className="text-gray-400 text-lg">
+              👆 Pilih kelas terlebih dahulu untuk menampilkan jadwal
+            </div>
           </div>
         )}
       </div>
@@ -497,8 +507,8 @@ const JadwalPelajaranSimple = () => {
           </div>
         </div>
       )}
-    </Layout>
+    </div>
   );
 };
 
-export default JadwalPelajaranSimple;
+export default VisualScheduleBuilder;

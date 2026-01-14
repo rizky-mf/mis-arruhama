@@ -11,6 +11,8 @@ require('dotenv').config();
 const { testConnection } = require('./config/database');
 const nlpManager = require('./services/nlpManager');
 const swaggerSpec = require('./config/swagger');
+const { errorHandler } = require('./utils/errorHandler');
+const { sendNotFound } = require('./utils/response');
 
 // Initialize Express App
 const app = express();
@@ -129,21 +131,11 @@ app.use('/api/jadwal', require('./routes/jadwalGridRoutes'));
 
 // 404 Handler
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint not found'
-  });
+  sendNotFound(res, 'Endpoint tidak ditemukan');
 });
 
-// Error Handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+// Global Error Handler - menggunakan centralized error handler
+app.use(errorHandler);
 
 // Start Server
 const startServer = async () => {
